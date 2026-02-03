@@ -1,4 +1,4 @@
-// Comprehensive error handling utilities for PrompX
+// Comprehensive error handling utilities for PromptX
 
 import { toast } from "@/hooks/use-toast";
 
@@ -35,7 +35,7 @@ export const createError = (
 // Handle Supabase errors
 export const handleSupabaseError = (error: any): AppError => {
   console.error('Supabase Error:', error);
-  
+
   // Authentication errors
   if (error.message?.includes('Invalid login credentials')) {
     return createError(
@@ -44,7 +44,7 @@ export const handleSupabaseError = (error: any): AppError => {
       error
     );
   }
-  
+
   if (error.message?.includes('Email not confirmed')) {
     return createError(
       ErrorType.AUTHENTICATION,
@@ -52,7 +52,7 @@ export const handleSupabaseError = (error: any): AppError => {
       error
     );
   }
-  
+
   if (error.message?.includes('User already registered')) {
     return createError(
       ErrorType.VALIDATION,
@@ -60,7 +60,7 @@ export const handleSupabaseError = (error: any): AppError => {
       error
     );
   }
-  
+
   // Network errors
   if (error.message?.includes('Failed to fetch') || error.code === 'NETWORK_ERROR') {
     return createError(
@@ -69,7 +69,7 @@ export const handleSupabaseError = (error: any): AppError => {
       error
     );
   }
-  
+
   // Database errors
   if (error.code?.startsWith('PGRST')) {
     return createError(
@@ -78,7 +78,7 @@ export const handleSupabaseError = (error: any): AppError => {
       error
     );
   }
-  
+
   // Authorization errors
   if (error.message?.includes('JWT') || error.message?.includes('unauthorized')) {
     return createError(
@@ -87,7 +87,7 @@ export const handleSupabaseError = (error: any): AppError => {
       error
     );
   }
-  
+
   // Default error
   return createError(
     ErrorType.UNKNOWN,
@@ -99,7 +99,7 @@ export const handleSupabaseError = (error: any): AppError => {
 // Handle payment errors
 export const handlePaymentError = (error: any): AppError => {
   console.error('Payment Error:', error);
-  
+
   if (error.code === 'card_declined') {
     return createError(
       ErrorType.PAYMENT,
@@ -107,7 +107,7 @@ export const handlePaymentError = (error: any): AppError => {
       error
     );
   }
-  
+
   if (error.code === 'insufficient_funds') {
     return createError(
       ErrorType.PAYMENT,
@@ -115,7 +115,7 @@ export const handlePaymentError = (error: any): AppError => {
       error
     );
   }
-  
+
   if (error.code === 'expired_card') {
     return createError(
       ErrorType.PAYMENT,
@@ -123,7 +123,7 @@ export const handlePaymentError = (error: any): AppError => {
       error
     );
   }
-  
+
   if (error.code === 'invalid_cvc') {
     return createError(
       ErrorType.PAYMENT,
@@ -131,7 +131,7 @@ export const handlePaymentError = (error: any): AppError => {
       error
     );
   }
-  
+
   return createError(
     ErrorType.PAYMENT,
     'Payment processing failed. Please check your payment details and try again.',
@@ -142,7 +142,7 @@ export const handlePaymentError = (error: any): AppError => {
 // Handle API errors
 export const handleApiError = (error: any, context?: string): AppError => {
   console.error(`API Error${context ? ` (${context})` : ''}:`, error);
-  
+
   if (error.status === 401) {
     return createError(
       ErrorType.AUTHORIZATION,
@@ -150,7 +150,7 @@ export const handleApiError = (error: any, context?: string): AppError => {
       error
     );
   }
-  
+
   if (error.status === 403) {
     return createError(
       ErrorType.AUTHORIZATION,
@@ -158,7 +158,7 @@ export const handleApiError = (error: any, context?: string): AppError => {
       error
     );
   }
-  
+
   if (error.status === 404) {
     return createError(
       ErrorType.VALIDATION,
@@ -166,7 +166,7 @@ export const handleApiError = (error: any, context?: string): AppError => {
       error
     );
   }
-  
+
   if (error.status === 429) {
     return createError(
       ErrorType.NETWORK,
@@ -174,7 +174,7 @@ export const handleApiError = (error: any, context?: string): AppError => {
       error
     );
   }
-  
+
   if (error.status >= 500) {
     return createError(
       ErrorType.NETWORK,
@@ -182,7 +182,7 @@ export const handleApiError = (error: any, context?: string): AppError => {
       error
     );
   }
-  
+
   return createError(
     ErrorType.UNKNOWN,
     error.message || 'An unexpected error occurred.',
@@ -226,27 +226,27 @@ export const withRetry = async <T>(
   delay: number = 1000
 ): Promise<T> => {
   let lastError: any;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      
+
       // Don't retry on authentication or validation errors
-      if (error.code === ErrorType.AUTHENTICATION || 
-          error.code === ErrorType.VALIDATION ||
-          error.status === 401 || 
-          error.status === 400) {
+      if (error.code === ErrorType.AUTHENTICATION ||
+        error.code === ErrorType.VALIDATION ||
+        error.status === 401 ||
+        error.status === 400) {
         throw error;
       }
-      
+
       if (attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, delay * attempt));
       }
     }
   }
-  
+
   throw lastError;
 };
 
@@ -260,13 +260,13 @@ export const safeAsync = async <T>(
     return await operation();
   } catch (error) {
     const appError = handleApiError(error);
-    
+
     if (onError) {
       onError(appError);
     } else {
       showErrorToast(appError);
     }
-    
+
     return fallback;
   }
 };
@@ -277,11 +277,11 @@ export const validateEnvironment = (): void => {
     'VITE_SUPABASE_URL',
     'VITE_SUPABASE_ANON_KEY'
   ];
-  
+
   const missing = requiredEnvVars.filter(
     varName => !import.meta.env[varName]
   );
-  
+
   if (missing.length > 0) {
     console.error('Missing required environment variables:', missing);
     throw createError(

@@ -25,9 +25,9 @@ const handler = async (req: Request): Promise<Response> => {
     // TODO: Integrate with email service like Resend
     // const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
     // await resend.emails.send({
-    //   from: "PrompX <onboarding@resend.dev>",
+    //   from: "PromptX <onboarding@resend.dev>",
     //   to: [email],
-    //   subject: "Your PrompX Verification Code",
+    //   subject: "Your PromptX Verification Code",
     //   html: `
     //     <h1>Verify Your Email</h1>
     //     <p>Your verification code is: <strong>${otp}</strong></p>
@@ -36,9 +36,9 @@ const handler = async (req: Request): Promise<Response> => {
     // });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "OTP sent successfully (check console for now)" 
+      JSON.stringify({
+        success: true,
+        message: "OTP sent successfully (check console for now)"
       }),
       {
         status: 200,

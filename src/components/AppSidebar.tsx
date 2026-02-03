@@ -44,6 +44,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -57,13 +58,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface AppSidebarProps {
   user?: User | null;
 }
 
 const mainNavItems = [
-  { name: 'Home', path: '/', icon: Home },
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'AI Agents', path: '/agents', icon: Zap },
   { name: 'Analytics', path: '/analytics', icon: TrendingUp },
@@ -108,12 +109,12 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
   const { toast } = useToast();
   const location = useLocation();
   const currentPath = location.pathname;
-  
+  const { state } = useSidebar();
+
   // Refs for scroll position management
   const sidebarContentRef = useRef<HTMLDivElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
-  const scrollTimeoutRef = useRef<number>();
-  
+
   // Determine which sections should be open based on active path
   const getDefaultOpenStates = useMemo(() => {
     const hasAccountItem = accountItems.some(item => item.path === currentPath);
@@ -121,7 +122,7 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
     const hasSettingsItem = settingsItems.some(item => item.path === currentPath);
     const hasAdvancedItem = advancedItems.some(item => item.path === currentPath);
     const hasConnectItem = connectItems.some(item => item.path === currentPath);
-    
+
     return {
       account: hasAccountItem,
       tools: hasToolsItem,
@@ -130,48 +131,57 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
       connect: hasConnectItem,
     };
   }, [currentPath]);
-  
-  // State for collapsible sections
-  const [openSections, setOpenSections] = useState({
-    account: true,
-    tools: true,
-    settings: getDefaultOpenStates.settings,
-    advanced: getDefaultOpenStates.advanced,
-    connect: getDefaultOpenStates.connect,
+
+  // Initialize openSections from sessionStorage or default
+  const [openSections, setOpenSections] = useState(() => {
+    const saved = sessionStorage.getItem('sidebar-sections-state');
+    const defaults = {
+      account: true,
+      tools: true,
+      settings: getDefaultOpenStates.settings,
+      advanced: getDefaultOpenStates.advanced,
+      connect: getDefaultOpenStates.connect,
+    };
+    if (saved) {
+      try {
+        return { ...defaults, ...JSON.parse(saved) };
+      } catch (e) {
+        return defaults;
+      }
+    }
+    return defaults;
   });
-  
-  // Auto-expand sections when their items become active
+
+  // Save openSections to sessionStorage
   useEffect(() => {
-    setOpenSections(prev => ({
-      ...prev,
-      account: prev.account || getDefaultOpenStates.account,
-      tools: prev.tools || getDefaultOpenStates.tools,
-      settings: prev.settings || getDefaultOpenStates.settings,
-      advanced: prev.advanced || getDefaultOpenStates.advanced,
-      connect: prev.connect || getDefaultOpenStates.connect,
-    }));
+    sessionStorage.setItem('sidebar-sections-state', JSON.stringify(openSections));
+  }, [openSections]);
+
+  // Auto-expand sections when their items become active, but respect user choice mostly
+  // We only expand if the section is closed AND it's now necessary to show the active item
+  useEffect(() => {
+    setOpenSections(prev => {
+      const next = {
+        ...prev,
+        account: prev.account || getDefaultOpenStates.account,
+        tools: prev.tools || getDefaultOpenStates.tools,
+        settings: prev.settings || getDefaultOpenStates.settings,
+        advanced: prev.advanced || getDefaultOpenStates.advanced,
+        connect: prev.connect || getDefaultOpenStates.connect,
+      };
+
+      // Only update if changed to avoid unnecessary renders/storage writes
+      if (JSON.stringify(prev) !== JSON.stringify(next)) {
+        return next;
+      }
+      return prev;
+    });
   }, [getDefaultOpenStates]);
-  
-  // Save scroll position to localStorage
-  const saveScrollPosition = useCallback(() => {
-    if (sidebarContentRef.current) {
-      const scrollTop = sidebarContentRef.current.scrollTop;
-      sessionStorage.setItem('sidebar-scroll-position', scrollTop.toString());
-    }
-  }, []);
-  
-  // Restore scroll position from localStorage
-  const restoreScrollPosition = useCallback(() => {
-    const savedPosition = sessionStorage.getItem('sidebar-scroll-position');
-    if (savedPosition && sidebarContentRef.current) {
-      sidebarContentRef.current.scrollTop = parseInt(savedPosition, 10);
-    }
-  }, []);
-  
+
   // Scroll active item into view
   const scrollActiveItemIntoView = useCallback(() => {
     if (activeItemRef.current && sidebarContentRef.current) {
-      // Small delay to ensure collapsible sections are expanded
+      // Small delay to ensure collapsible sections are expanded and layout is stable
       setTimeout(() => {
         activeItemRef.current?.scrollIntoView({
           behavior: 'smooth',
@@ -181,39 +191,11 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
       }, 150);
     }
   }, []);
-  
-  // Restore scroll position on mount
-  useEffect(() => {
-    restoreScrollPosition();
-  }, [restoreScrollPosition]);
-  
+
   // Scroll to active item when path changes
   useEffect(() => {
     scrollActiveItemIntoView();
   }, [currentPath, scrollActiveItemIntoView]);
-  
-  // Save scroll position on scroll with debouncing
-  useEffect(() => {
-    const handleScroll = () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      scrollTimeoutRef.current = window.setTimeout(() => {
-        saveScrollPosition();
-      }, 100);
-    };
-    
-    const contentElement = sidebarContentRef.current;
-    if (contentElement) {
-      contentElement.addEventListener('scroll', handleScroll, { passive: true });
-      return () => {
-        contentElement.removeEventListener('scroll', handleScroll);
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-        }
-      };
-    }
-  }, [saveScrollPosition]);
 
   const handleLogout = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
@@ -231,23 +213,26 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
   const isActive = useCallback((path: string) => currentPath === path, [currentPath]);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-zinc-800/40 bg-gradient-to-b from-black via-zinc-950 to-black shadow-2xl shadow-black/50 h-screen">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar dark:bg-gradient-to-b dark:from-black dark:via-zinc-950 dark:to-black shadow-2xl h-screen select-none overflow-hidden">
       {/* Header - Mobile Optimized */}
-      <SidebarHeader className="border-b border-zinc-800/40 bg-gradient-to-br from-zinc-900/40 via-zinc-900/20 to-transparent px-4 sm:px-5 py-5 sm:py-6 flex-shrink-0 backdrop-blur-sm">
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar dark:bg-gradient-to-br dark:from-zinc-900/40 dark:via-zinc-900/20 dark:to-transparent px-4 sm:px-5 py-5 sm:py-6 flex-shrink-0 backdrop-blur-sm group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               onClick={() => navigate('/')}
-              className="group-data-[collapsible=icon]:!p-2 hover:bg-zinc-900/60 transition-all duration-500 rounded-xl touch-manipulation min-h-[48px]"
+              className="group-data-[collapsible=icon]:!p-0 hover:bg-zinc-900/60 transition-all duration-500 rounded-xl touch-manipulation min-h-[48px] justify-center"
             >
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-white via-zinc-50 to-zinc-100 shadow-xl shadow-white/25 transition-all duration-500 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-white/40 group-hover:rotate-3">
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <Sparkles className="h-5 w-5 text-black relative z-10" strokeWidth={2.5} />
+              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden transition-all duration-500 group-hover:scale-110">
+                <img
+                  src="/promptx-logo.png"
+                  alt="PromptX"
+                  className="h-full w-full object-cover"
+                />
               </div>
-              <div className="flex flex-col gap-1.5 leading-none">
-                <span className="text-lg font-extrabold tracking-tight text-white bg-gradient-to-r from-white to-zinc-200 bg-clip-text">PrompX</span>
-                <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-500">AI Engineering</span>
+              <div className="flex flex-col gap-1.5 leading-none group-data-[collapsible=icon]:hidden">
+                <span className="text-lg font-extrabold tracking-tight text-sidebar-foreground">PromptX</span>
+                <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">AI Engineering</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -255,19 +240,19 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
       </SidebarHeader>
 
       {/* Content - Mobile Optimized */}
-      <SidebarContent 
+      <SidebarContent
         ref={sidebarContentRef}
-        className="px-2 sm:px-3 py-4 sm:py-6 flex-1 overflow-y-auto overscroll-contain"
+        className="px-2 sm:px-3 py-4 sm:py-6 flex-1 overflow-y-auto overscroll-contain group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!py-4 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col"
       >
         {/* Main Navigation */}
-        <SidebarGroup className="mb-8">
-          <SidebarGroupLabel className="px-4 text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-600 mb-4 flex items-center gap-2">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+        <SidebarGroup className="mb-6 group-data-[collapsible=icon]:mb-4 group-data-[collapsible=icon]:w-full">
+          <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500/80 mb-3 flex items-center gap-3 group-data-[collapsible=icon]:hidden">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
             <span>Main</span>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1.5">
+            <SidebarMenu className="gap-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
               {mainNavItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
@@ -282,17 +267,20 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
                       onMouseDown={(e) => e.preventDefault()}
                       isActive={active}
                       tooltip={item.name}
-                      className={`relative px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl transition-all duration-500 group overflow-hidden touch-manipulation min-h-[48px] ${
-                        active
-                          ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white shadow-xl shadow-zinc-900/60 border border-zinc-700/50'
-                          : 'hover:bg-zinc-900/60 text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800/50'
-                      }`}
+                      className={`relative px-3 sm:px-4 py-3 rounded-xl transition-all duration-300 group overflow-hidden touch-manipulation min-h-[44px] w-full group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center ${active
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-sidebar-border backdrop-blur-sm'
+                        : 'hover:bg-sidebar-accent/50 text-muted-foreground hover:text-sidebar-foreground border border-transparent hover:border-sidebar-border'
+                        }`}
                     >
-                      <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000`}></div>
-                      <Icon className={`h-5 w-5 transition-all duration-300 relative z-10 ${active ? 'text-white drop-shadow-lg' : 'text-zinc-500 group-hover:text-white group-hover:scale-110'}`} />
-                      <span className="font-bold text-base relative z-10">{item.name}</span>
                       {active && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-gradient-to-b from-white via-zinc-300 to-white rounded-r-full shadow-lg shadow-white/50" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent pointer-events-none" />
+                      )}
+
+                      <Icon className={`h-[18px] w-[18px] transition-all duration-300 relative z-10 ${active ? 'text-sidebar-accent-foreground' : 'text-muted-foreground group-hover:text-sidebar-foreground'}`} />
+                      <span className={`font-medium text-[14px] relative z-10 group-data-[collapsible=icon]:hidden ${active ? 'tracking-wide' : 'tracking-normal'}`}>{item.name}</span>
+
+                      {active && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -303,23 +291,23 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
         </SidebarGroup>
 
         {/* Account */}
-        <Collapsible 
-          open={openSections.account} 
+        <Collapsible
+          open={state === 'collapsed' || openSections.account}
           onOpenChange={(open) => setOpenSections(prev => ({ ...prev, account: open }))}
           className="group/collapsible mb-8"
         >
           <SidebarGroup>
             <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="px-4 text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400 transition-all duration-300 mb-4 flex items-center gap-2 group">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+              <CollapsibleTrigger className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500/80 hover:text-zinc-300 transition-all duration-300 mb-3 flex items-center gap-3 group group-data-[collapsible=icon]:hidden">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
                 <span>Account</span>
-                <ChevronRight className="ml-auto h-4 w-4 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+                <ChevronRight className="ml-auto h-3.5 w-3.5 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
               </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5">
+                <SidebarMenu className="gap-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
                   {accountItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.path);
@@ -335,17 +323,20 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
                           onFocus={(e) => e.preventDefault()}
                           isActive={active}
                           tooltip={item.name}
-                          className={`relative px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl transition-all duration-500 group overflow-hidden touch-manipulation min-h-[48px] ${
-                            active
-                              ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white shadow-xl shadow-zinc-900/60 border border-zinc-700/50'
-                              : 'hover:bg-zinc-900/60 text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800/50'
-                          }`}
+                          className={`relative px-3 sm:px-4 py-3 rounded-xl transition-all duration-300 group overflow-hidden touch-manipulation min-h-[44px] w-full justify-start group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center ${active
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-sidebar-border backdrop-blur-sm'
+                            : 'hover:bg-sidebar-accent/50 text-muted-foreground hover:text-sidebar-foreground border border-transparent hover:border-sidebar-border'
+                            }`}
                         >
-                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000`}></div>
-                          <Icon className={`h-5 w-5 transition-all duration-300 relative z-10 ${active ? 'text-white drop-shadow-lg' : 'text-zinc-500 group-hover:text-white group-hover:scale-110'}`} />
-                          <span className="font-bold text-base relative z-10">{item.name}</span>
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-gradient-to-b from-white via-zinc-300 to-white rounded-r-full shadow-lg shadow-white/50" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent pointer-events-none group-data-[collapsible=icon]:hidden" />
+                          )}
+
+                          <Icon className={`h-[18px] w-[18px] transition-all duration-300 relative z-10 shrink-0 ${active ? 'text-sidebar-accent-foreground' : 'text-muted-foreground group-hover:text-sidebar-foreground'}`} />
+                          <span className={`font-medium text-[14px] relative z-10 group-data-[collapsible=icon]:hidden ${active ? 'tracking-wide' : 'tracking-normal'}`}>{item.name}</span>
+
+                          {active && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)] group-data-[collapsible=icon]:hidden" />
                           )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -358,23 +349,23 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
         </Collapsible>
 
         {/* Tools */}
-        <Collapsible 
-          open={openSections.tools} 
+        <Collapsible
+          open={state === 'collapsed' || openSections.tools}
           onOpenChange={(open) => setOpenSections(prev => ({ ...prev, tools: open }))}
           className="group/collapsible mb-8"
         >
           <SidebarGroup>
             <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="px-4 text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400 transition-all duration-300 mb-4 flex items-center gap-2 group">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+              <CollapsibleTrigger className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500/80 hover:text-zinc-300 transition-all duration-300 mb-3 flex items-center gap-3 group group-data-[collapsible=icon]:hidden">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
                 <span>Tools</span>
-                <ChevronRight className="ml-auto h-4 w-4 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+                <ChevronRight className="ml-auto h-3.5 w-3.5 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
               </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5">
+                <SidebarMenu className="gap-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
                   {toolsItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.path);
@@ -390,17 +381,20 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
                           onFocus={(e) => e.preventDefault()}
                           isActive={active}
                           tooltip={item.name}
-                          className={`relative px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl transition-all duration-500 group overflow-hidden touch-manipulation min-h-[48px] ${
-                            active
-                              ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white shadow-xl shadow-zinc-900/60 border border-zinc-700/50'
-                              : 'hover:bg-zinc-900/60 text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800/50'
-                          }`}
+                          className={`relative px-3 sm:px-4 py-3 rounded-xl transition-all duration-300 group overflow-hidden touch-manipulation min-h-[44px] w-full justify-start group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center ${active
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-sidebar-border backdrop-blur-sm'
+                            : 'hover:bg-sidebar-accent/50 text-muted-foreground hover:text-sidebar-foreground border border-transparent hover:border-sidebar-border'
+                            }`}
                         >
-                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000`}></div>
-                          <Icon className={`h-5 w-5 transition-all duration-300 relative z-10 ${active ? 'text-white drop-shadow-lg' : 'text-zinc-500 group-hover:text-white group-hover:scale-110'}`} />
-                          <span className="font-bold text-base relative z-10">{item.name}</span>
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-gradient-to-b from-white via-zinc-300 to-white rounded-r-full shadow-lg shadow-white/50" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent pointer-events-none group-data-[collapsible=icon]:hidden" />
+                          )}
+
+                          <Icon className={`h-[18px] w-[18px] transition-all duration-300 relative z-10 shrink-0 ${active ? 'text-sidebar-accent-foreground' : 'text-muted-foreground group-hover:text-sidebar-foreground'}`} />
+                          <span className={`font-medium text-[14px] relative z-10 group-data-[collapsible=icon]:hidden ${active ? 'tracking-wide' : 'tracking-normal'}`}>{item.name}</span>
+
+                          {active && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)] group-data-[collapsible=icon]:hidden" />
                           )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -413,23 +407,23 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
         </Collapsible>
 
         {/* Settings */}
-        <Collapsible 
-          open={openSections.settings} 
+        <Collapsible
+          open={state === 'collapsed' || openSections.settings}
           onOpenChange={(open) => setOpenSections(prev => ({ ...prev, settings: open }))}
           className="group/collapsible mb-8"
         >
           <SidebarGroup>
             <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="px-4 text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400 transition-all duration-300 mb-4 flex items-center gap-2 group">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+              <CollapsibleTrigger className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500/80 hover:text-zinc-300 transition-all duration-300 mb-3 flex items-center gap-3 group group-data-[collapsible=icon]:hidden">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
                 <span>Settings</span>
-                <ChevronRight className="ml-auto h-4 w-4 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+                <ChevronRight className="ml-auto h-3.5 w-3.5 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
               </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5">
+                <SidebarMenu className="gap-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
                   {settingsItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.path);
@@ -445,17 +439,20 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
                           onFocus={(e) => e.preventDefault()}
                           isActive={active}
                           tooltip={item.name}
-                          className={`relative px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl transition-all duration-500 group overflow-hidden touch-manipulation min-h-[48px] ${
-                            active
-                              ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white shadow-xl shadow-zinc-900/60 border border-zinc-700/50'
-                              : 'hover:bg-zinc-900/60 text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800/50'
-                          }`}
+                          className={`relative px-3 sm:px-4 py-3 rounded-xl transition-all duration-300 group overflow-hidden touch-manipulation min-h-[44px] w-full justify-start group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center ${active
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-sidebar-border backdrop-blur-sm'
+                            : 'hover:bg-sidebar-accent/50 text-muted-foreground hover:text-sidebar-foreground border border-transparent hover:border-sidebar-border'
+                            }`}
                         >
-                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000`}></div>
-                          <Icon className={`h-5 w-5 transition-all duration-300 relative z-10 ${active ? 'text-white drop-shadow-lg' : 'text-zinc-500 group-hover:text-white group-hover:scale-110'}`} />
-                          <span className="font-bold text-base relative z-10">{item.name}</span>
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-gradient-to-b from-white via-zinc-300 to-white rounded-r-full shadow-lg shadow-white/50" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent pointer-events-none group-data-[collapsible=icon]:hidden" />
+                          )}
+
+                          <Icon className={`h-[18px] w-[18px] transition-all duration-300 relative z-10 shrink-0 ${active ? 'text-sidebar-accent-foreground' : 'text-muted-foreground group-hover:text-sidebar-foreground'}`} />
+                          <span className={`font-medium text-[14px] relative z-10 group-data-[collapsible=icon]:hidden ${active ? 'tracking-wide' : 'tracking-normal'}`}>{item.name}</span>
+
+                          {active && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)] group-data-[collapsible=icon]:hidden" />
                           )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -468,23 +465,23 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
         </Collapsible>
 
         {/* Advanced */}
-        <Collapsible 
-          open={openSections.advanced} 
+        <Collapsible
+          open={state === 'collapsed' || openSections.advanced}
           onOpenChange={(open) => setOpenSections(prev => ({ ...prev, advanced: open }))}
           className="group/collapsible mb-8"
         >
           <SidebarGroup>
             <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="px-4 text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400 transition-all duration-300 mb-4 flex items-center gap-2 group">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+              <CollapsibleTrigger className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500/80 hover:text-zinc-300 transition-all duration-300 mb-3 flex items-center gap-3 group group-data-[collapsible=icon]:hidden">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
                 <span>Advanced</span>
-                <ChevronRight className="ml-auto h-4 w-4 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+                <ChevronRight className="ml-auto h-3.5 w-3.5 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
               </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5">
+                <SidebarMenu className="gap-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
                   {advancedItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.path);
@@ -500,17 +497,20 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
                           onFocus={(e) => e.preventDefault()}
                           isActive={active}
                           tooltip={item.name}
-                          className={`relative px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl transition-all duration-500 group overflow-hidden touch-manipulation min-h-[48px] ${
-                            active
-                              ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white shadow-xl shadow-zinc-900/60 border border-zinc-700/50'
-                              : 'hover:bg-zinc-900/60 text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800/50'
-                          }`}
+                          className={`relative px-3 sm:px-4 py-3 rounded-xl transition-all duration-300 group overflow-hidden touch-manipulation min-h-[44px] w-full justify-start group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center ${active
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-sidebar-border backdrop-blur-sm'
+                            : 'hover:bg-sidebar-accent/50 text-muted-foreground hover:text-sidebar-foreground border border-transparent hover:border-sidebar-border'
+                            }`}
                         >
-                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000`}></div>
-                          <Icon className={`h-5 w-5 transition-all duration-300 relative z-10 ${active ? 'text-white drop-shadow-lg' : 'text-zinc-500 group-hover:text-white group-hover:scale-110'}`} />
-                          <span className="font-bold text-base relative z-10">{item.name}</span>
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-gradient-to-b from-white via-zinc-300 to-white rounded-r-full shadow-lg shadow-white/50" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent pointer-events-none group-data-[collapsible=icon]:hidden" />
+                          )}
+
+                          <Icon className={`h-[18px] w-[18px] transition-all duration-300 relative z-10 shrink-0 ${active ? 'text-sidebar-accent-foreground' : 'text-muted-foreground group-hover:text-sidebar-foreground'}`} />
+                          <span className={`font-medium text-[14px] relative z-10 group-data-[collapsible=icon]:hidden ${active ? 'tracking-wide' : 'tracking-normal'}`}>{item.name}</span>
+
+                          {active && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)] group-data-[collapsible=icon]:hidden" />
                           )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -523,23 +523,23 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
         </Collapsible>
 
         {/* Connect */}
-        <Collapsible 
-          open={openSections.connect} 
+        <Collapsible
+          open={state === 'collapsed' || openSections.connect}
           onOpenChange={(open) => setOpenSections(prev => ({ ...prev, connect: open }))}
           className="group/collapsible mb-8"
         >
           <SidebarGroup>
             <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="px-4 text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400 transition-all duration-300 mb-4 flex items-center gap-2 group">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+              <CollapsibleTrigger className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500/80 hover:text-zinc-300 transition-all duration-300 mb-3 flex items-center gap-3 group group-data-[collapsible=icon]:hidden">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
                 <span>Connect</span>
-                <ChevronRight className="ml-auto h-4 w-4 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+                <ChevronRight className="ml-auto h-3.5 w-3.5 transition-all duration-500 group-data-[state=open]/collapsible:rotate-90 group-hover:text-zinc-300" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
               </CollapsibleTrigger>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5">
+                <SidebarMenu className="gap-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
                   {connectItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.path);
@@ -555,17 +555,20 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
                           onFocus={(e) => e.preventDefault()}
                           isActive={active}
                           tooltip={item.name}
-                          className={`relative px-3 sm:px-4 py-3 sm:py-3.5 rounded-xl transition-all duration-500 group overflow-hidden touch-manipulation min-h-[48px] ${
-                            active
-                              ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white shadow-xl shadow-zinc-900/60 border border-zinc-700/50'
-                              : 'hover:bg-zinc-900/60 text-zinc-400 hover:text-white border border-transparent hover:border-zinc-800/50'
-                          }`}
+                          className={`relative px-3 sm:px-4 py-3 rounded-xl transition-all duration-300 group overflow-hidden touch-manipulation min-h-[44px] w-full justify-start group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center ${active
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm border border-sidebar-border backdrop-blur-sm'
+                            : 'hover:bg-sidebar-accent/50 text-muted-foreground hover:text-sidebar-foreground border border-transparent hover:border-sidebar-border'
+                            }`}
                         >
-                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000`}></div>
-                          <Icon className={`h-5 w-5 transition-all duration-300 relative z-10 ${active ? 'text-white drop-shadow-lg' : 'text-zinc-500 group-hover:text-white group-hover:scale-110'}`} />
-                          <span className="font-bold text-base relative z-10">{item.name}</span>
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-gradient-to-b from-white via-zinc-300 to-white rounded-r-full shadow-lg shadow-white/50" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent pointer-events-none group-data-[collapsible=icon]:hidden" />
+                          )}
+
+                          <Icon className={`h-[18px] w-[18px] transition-all duration-300 relative z-10 shrink-0 ${active ? 'text-sidebar-accent-foreground' : 'text-muted-foreground group-hover:text-sidebar-foreground'}`} />
+                          <span className={`font-medium text-[14px] relative z-10 group-data-[collapsible=icon]:hidden ${active ? 'tracking-wide' : 'tracking-normal'}`}>{item.name}</span>
+
+                          {active && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)] group-data-[collapsible=icon]:hidden" />
                           )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -579,69 +582,73 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
       </SidebarContent>
 
       {/* Footer - Mobile Optimized */}
-      <SidebarFooter className="border-t border-zinc-800/40 bg-gradient-to-t from-zinc-900/40 via-zinc-900/20 to-transparent px-3 sm:px-4 py-4 sm:py-5 flex-shrink-0 backdrop-blur-sm">
+      <SidebarFooter className="border-t border-sidebar-border bg-sidebar dark:bg-gradient-to-t dark:from-zinc-900/40 dark:via-zinc-900/20 dark:to-transparent px-3 sm:px-4 py-4 sm:py-5 flex-shrink-0 backdrop-blur-sm group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
         <SidebarMenu>
+          <SidebarMenuItem className="mb-2 flex justify-center">
+            <ThemeToggle />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton 
-                    size="lg" 
-                    className="data-[state=open]:bg-zinc-900/60 hover:bg-zinc-900/60 transition-all duration-500 rounded-xl px-3 sm:px-4 py-3 border border-transparent hover:border-zinc-800/50 group overflow-hidden relative touch-manipulation min-h-[56px]"
+                  <SidebarMenuButton
+                    size="lg"
+                    className="data-[state=open]:bg-sidebar-accent hover:bg-sidebar-accent/50 transition-all duration-500 rounded-xl px-3 sm:px-4 py-3 border border-transparent hover:border-sidebar-border group overflow-hidden relative touch-manipulation min-h-[56px] w-full group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-700 via-zinc-800 to-zinc-900 shadow-xl shadow-zinc-900/50 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10 border border-zinc-700/50">
-                      <UserIcon className="h-5 w-5 text-white" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sidebar-accent to-sidebar-accent/80 shadow-inner border border-sidebar-border transition-all duration-500 group-hover:scale-110 relative z-10">
+                      <UserIcon className="h-5 w-5 text-sidebar-foreground" />
                     </div>
-                    <div className="flex flex-col gap-1 leading-none text-left flex-1 relative z-10">
-                      <span className="font-extrabold text-sm truncate max-w-[150px] text-white">
+                    <div className="flex flex-col gap-1 leading-none text-left flex-1 relative z-10 ml-1 group-data-[collapsible=icon]:hidden">
+                      <span className="font-semibold text-sm truncate max-w-[150px] text-sidebar-foreground transition-colors">
                         {user.email}
                       </span>
-                      <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-500">Signed in</span>
+                      <span className="text-[10px] font-medium text-muted-foreground group-hover:text-sidebar-foreground">Pro Plan</span>
+                    </div>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity group-data-[collapsible=icon]:hidden">
+                      <Settings className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  side="top" 
-                  className="w-[--radix-popper-anchor-width] bg-gradient-to-br from-black via-zinc-950 to-black border-zinc-800/60 shadow-2xl backdrop-blur-xl rounded-xl p-2"
+                <DropdownMenuContent
+                  side="top"
+                  className="w-[--radix-popper-anchor-width] bg-popover border-border shadow-lg rounded-xl p-1.5 gap-1 mb-2"
                 >
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/profile')}
-                    className="cursor-pointer text-zinc-300 hover:text-white hover:bg-zinc-900/80 transition-all duration-300 rounded-lg px-3 py-3 font-semibold touch-manipulation min-h-[48px] flex items-center"
+                    className="cursor-pointer text-muted-foreground hover:text-foreground hover:bg-accent focus:bg-accent rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
                   >
-                    <UserIcon className="mr-3 h-5 w-5" />
+                    <UserIcon className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/settings')}
-                    className="cursor-pointer text-zinc-300 hover:text-white hover:bg-zinc-900/80 transition-all duration-300 rounded-lg px-3 py-3 font-semibold touch-manipulation min-h-[48px] flex items-center"
+                    className="cursor-pointer text-muted-foreground hover:text-foreground hover:bg-accent focus:bg-accent rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
                   >
-                    <Settings className="mr-3 h-5 w-5" />
+                    <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
-                  <div className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent my-2"></div>
-                  <DropdownMenuItem 
+                  <div className="h-px bg-border my-1 mx-2"></div>
+                  <DropdownMenuItem
                     onClick={handleLogout}
-                    className="cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-950/40 transition-all duration-300 rounded-lg px-3 py-3 font-semibold touch-manipulation min-h-[48px] flex items-center"
+                    className="cursor-pointer text-red-500 hover:text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
                   >
-                    <LogOut className="mr-3 h-5 w-5" />
+                    <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <SidebarMenuButton 
-                size="lg" 
+              <SidebarMenuButton
+                size="lg"
                 onClick={() => navigate('/auth')}
-                className="hover:bg-zinc-900/60 transition-all duration-500 rounded-xl px-3 sm:px-4 py-3 border border-transparent hover:border-zinc-800/50 group overflow-hidden relative touch-manipulation min-h-[56px]"
+                className="hover:bg-sidebar-accent/50 transition-all duration-500 rounded-xl px-3 sm:px-4 py-3 border border-transparent hover:border-sidebar-border group overflow-hidden relative touch-manipulation min-h-[56px] w-full group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-white via-zinc-50 to-zinc-100 shadow-xl shadow-white/25 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10">
-                  <UserIcon className="h-5 w-5 text-black" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-foreground text-sidebar-primary-foreground shadow-lg transition-all duration-500 group-hover:scale-110 relative z-10">
+                  <UserIcon className="h-5 w-5" />
                 </div>
-                <div className="flex flex-col gap-1 leading-none relative z-10">
-                  <span className="font-extrabold text-white">Sign In</span>
-                  <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-500">Get started</span>
+                <div className="flex flex-col gap-1 leading-none relative z-10 ml-1 group-data-[collapsible=icon]:hidden">
+                  <span className="font-bold text-sidebar-foreground text-sm">Sign In</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">Get started</span>
                 </div>
               </SidebarMenuButton>
             )}

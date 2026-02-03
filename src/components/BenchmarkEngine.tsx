@@ -164,134 +164,134 @@ const BenchmarkEngine = ({
     });
   };
   return <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="p-3 rounded-lg bg-primary/10">
-          <Sparkles className="h-6 w-6 text-primary" />
-        </div>
+    <div className="flex items-center gap-3">
+      <div className="p-3 rounded-lg bg-primary/10">
+        <Sparkles className="h-6 w-6 text-primary" />
+      </div>
+      <div>
+        <h2 className="text-2xl font-bold">AI Benchmarking with PromptX</h2>
+        <p className="text-muted-foreground">Test prompts with advanced quality analysis</p>
+      </div>
+    </div>
+
+    <Card className="p-6">
+      <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">AI Benchmarking with PrompX</h2>
-          <p className="text-muted-foreground">Test prompts with advanced quality analysis</p>
+          <label className="text-sm font-medium mb-2 block">Enter Prompt to Benchmark</label>
+          <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Write a compelling story about a robot learning to feel emotions..." className="min-h-[120px]" disabled={loading} />
+        </div>
+
+        <Button onClick={runBenchmark} disabled={loading || !prompt.trim()} className="w-full" size="lg">
+          {loading ? <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Running Benchmark...
+          </> : <>
+            <Zap className="mr-2 h-4 w-4" />
+            Run AI Benchmark
+          </>}
+        </Button>
+      </div>
+    </Card>
+
+    {results.length > 0 && <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold">Benchmark Results</h3>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="text-sm">
+            Claude 4 Sonnet
+          </Badge>
+          <Button variant="outline" size="sm" onClick={handleExportResults}>
+            <Download className="w-4 h-4 mr-2" />
+            Export Results
+          </Button>
         </div>
       </div>
 
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Enter Prompt to Benchmark</label>
-            <Textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Write a compelling story about a robot learning to feel emotions..." className="min-h-[120px]" disabled={loading} />
-          </div>
-
-          <Button onClick={runBenchmark} disabled={loading || !prompt.trim()} className="w-full" size="lg">
-            {loading ? <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Running Benchmark...
-              </> : <>
-                <Zap className="mr-2 h-4 w-4" />
-                Run AI Benchmark
-              </>}
-          </Button>
-        </div>
-      </Card>
-
-      {results.length > 0 && <div className="space-y-4">
+      <div className="grid gap-4">
+        {results.map((result, idx) => <Card key={idx} className="p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">Benchmark Results</h3>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="text-sm">
-                Claude 4 Sonnet
-              </Badge>
-              <Button variant="outline" size="sm" onClick={handleExportResults}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Results
-              </Button>
+            <div>
+              <h4 className="font-semibold text-lg">{result.model}</h4>
+              <p className="text-sm text-muted-foreground">
+                {result.success ? `${result.responseTime}ms response time` : 'Failed'}
+              </p>
             </div>
+            {result.success && <Badge variant={getScoreBadgeVariant(result.overallScore)} className="text-lg px-3 py-1">
+              {result.overallScore}
+            </Badge>}
           </div>
 
-          <div className="grid gap-4">
-            {results.map((result, idx) => <Card key={idx} className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold text-lg">{result.model}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {result.success ? `${result.responseTime}ms response time` : 'Failed'}
-                    </p>
+          {result.success ? <>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1">
+                      <Target className="h-3 w-3" />
+                      Clarity
+                    </span>
+                    <span className={`font-semibold ${getScoreColor(result.clarityScore)}`}>
+                      {result.clarityScore}
+                    </span>
                   </div>
-                  {result.success && <Badge variant={getScoreBadgeVariant(result.overallScore)} className="text-lg px-3 py-1">
-                      {result.overallScore}
-                    </Badge>}
+                  <Progress value={result.clarityScore} className="h-1.5" />
                 </div>
 
-                {result.success ? <>
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1">
-                              <Target className="h-3 w-3" />
-                              Clarity
-                            </span>
-                            <span className={`font-semibold ${getScoreColor(result.clarityScore)}`}>
-                              {result.clarityScore}
-                            </span>
-                          </div>
-                          <Progress value={result.clarityScore} className="h-1.5" />
-                        </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      Originality
+                    </span>
+                    <span className={`font-semibold ${getScoreColor(result.originalityScore)}`}>
+                      {result.originalityScore}
+                    </span>
+                  </div>
+                  <Progress value={result.originalityScore} className="h-1.5" />
+                </div>
 
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1">
-                              <Sparkles className="h-3 w-3" />
-                              Originality
-                            </span>
-                            <span className={`font-semibold ${getScoreColor(result.originalityScore)}`}>
-                              {result.originalityScore}
-                            </span>
-                          </div>
-                          <Progress value={result.originalityScore} className="h-1.5" />
-                        </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      Depth
+                    </span>
+                    <span className={`font-semibold ${getScoreColor(result.depthScore)}`}>
+                      {result.depthScore}
+                    </span>
+                  </div>
+                  <Progress value={result.depthScore} className="h-1.5" />
+                </div>
 
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1">
-                              <TrendingUp className="h-3 w-3" />
-                              Depth
-                            </span>
-                            <span className={`font-semibold ${getScoreColor(result.depthScore)}`}>
-                              {result.depthScore}
-                            </span>
-                          </div>
-                          <Progress value={result.depthScore} className="h-1.5" />
-                        </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      Relevance
+                    </span>
+                    <span className={`font-semibold ${getScoreColor(result.relevanceScore)}`}>
+                      {result.relevanceScore}
+                    </span>
+                  </div>
+                  <Progress value={result.relevanceScore} className="h-1.5" />
+                </div>
+              </div>
+            </div>
 
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1">
-                              <Zap className="h-3 w-3" />
-                              Relevance
-                            </span>
-                            <span className={`font-semibold ${getScoreColor(result.relevanceScore)}`}>
-                              {result.relevanceScore}
-                            </span>
-                          </div>
-                          <Progress value={result.relevanceScore} className="h-1.5" />
-                        </div>
-                      </div>
-                    </div>
+            <div className="pt-3 border-t">
+              <p className="text-sm text-muted-foreground mb-2 font-medium">Response:</p>
+              <p className="text-sm line-clamp-6">{result.response}</p>
+            </div>
 
-                    <div className="pt-3 border-t">
-                      <p className="text-sm text-muted-foreground mb-2 font-medium">Response:</p>
-                      <p className="text-sm line-clamp-6">{result.response}</p>
-                    </div>
-                    
-                    <div className="pt-3 border-t">
-                      <SocialShare title={`${result.model} scored ${result.overallScore}/100 on my benchmark!`} description={`Prompt: "${prompt.substring(0, 100)}..."\n\nScores: Clarity ${result.clarityScore}, Originality ${result.originalityScore}, Depth ${result.depthScore}`} />
-                    </div>
-                  </> : <div className="text-sm text-red-500">
-                    Error: {result.error || 'Failed to get response'}
-                  </div>}
-              </Card>)}
-          </div>
-        </div>}
-    </div>;
+            <div className="pt-3 border-t">
+              <SocialShare title={`${result.model} scored ${result.overallScore}/100 on my benchmark!`} description={`Prompt: "${prompt.substring(0, 100)}..."\n\nScores: Clarity ${result.clarityScore}, Originality ${result.originalityScore}, Depth ${result.depthScore}`} />
+            </div>
+          </> : <div className="text-sm text-red-500">
+            Error: {result.error || 'Failed to get response'}
+          </div>}
+        </Card>)}
+      </div>
+    </div>}
+  </div>;
 };
 export default BenchmarkEngine;

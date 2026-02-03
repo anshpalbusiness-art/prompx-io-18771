@@ -75,7 +75,7 @@ export const UserProfile = ({ userId, onPreferencesUpdate }: UserProfileProps) =
 
       toast({
         title: "✅ Preferences Saved!",
-        description: "PrompX will now personalize prompts based on your profile",
+        description: "PromptX will now personalize prompts based on your profile",
       });
 
       onPreferencesUpdate?.(preferences);
@@ -136,7 +136,7 @@ export const UserProfile = ({ userId, onPreferencesUpdate }: UserProfileProps) =
           <CardTitle>User Profile & Preferences</CardTitle>
         </div>
         <CardDescription>
-          Customize PrompX to learn your style and generate hyper-personalized prompts
+          Customize PromptX to learn your style and generate hyper-personalized prompts
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -223,8 +223,8 @@ export const UserProfile = ({ userId, onPreferencesUpdate }: UserProfileProps) =
               </Select>
             </div>
 
-            <Button 
-              onClick={savePreferences} 
+            <Button
+              onClick={savePreferences}
               disabled={isSaving}
               className="w-full"
             >

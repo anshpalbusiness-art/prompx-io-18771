@@ -59,13 +59,13 @@ export const PromptHistory = ({ userId, onPromptSelect }: PromptHistoryProps) =>
 
       if (error) throw error;
 
-      setHistory(history.map(item => 
+      setHistory(history.map(item =>
         item.id === id ? { ...item, rating } : item
       ));
 
       toast({
         title: "✅ Rating Saved",
-        description: "Thanks for the feedback! PrompX will learn from this.",
+        description: "Thanks for the feedback! PromptX will learn from this.",
       });
     } catch (error: any) {
       toast({
@@ -99,7 +99,7 @@ export const PromptHistory = ({ userId, onPromptSelect }: PromptHistoryProps) =>
           <CardTitle>Prompt History & Learning</CardTitle>
         </div>
         <CardDescription>
-          Your past prompts help PrompX learn your style and improve over time
+          Your past prompts help PromptX learn your style and improve over time
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -148,11 +148,10 @@ export const PromptHistory = ({ userId, onPromptSelect }: PromptHistoryProps) =>
                             className="focus:outline-none"
                           >
                             <Star
-                              className={`h-4 w-4 ${
-                                item.rating && star <= item.rating
+                              className={`h-4 w-4 ${item.rating && star <= item.rating
                                   ? 'fill-yellow-400 text-yellow-400'
                                   : 'text-muted-foreground'
-                              }`}
+                                }`}
                             />
                           </button>
                         ))}
@@ -172,7 +171,7 @@ export const PromptHistory = ({ userId, onPromptSelect }: PromptHistoryProps) =>
                         >
                           Reuse
                         </Button>
-                        <SocialShare 
+                        <SocialShare
                           title={`Check out my ${item.platform} prompt!`}
                           description={item.optimized_prompt.substring(0, 150) + "..."}
                         />

@@ -128,7 +128,7 @@ export default function Pricing() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      
+
       if (user) {
         // Check current subscription
         const { data: subscription } = await supabase
@@ -137,7 +137,7 @@ export default function Pricing() {
           .eq('user_id', user.id)
           .eq('status', 'active')
           .single();
-        
+
         if (subscription) {
           setCurrentPlan(subscription.plan_type);
         }
@@ -177,12 +177,12 @@ export default function Pricing() {
     }
 
     // Redirect to payment page with plan details
-    navigate('/payment', { 
-      state: { 
-        plan: plan.planType, 
+    navigate('/payment', {
+      state: {
+        plan: plan.planType,
         price: billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly,
-        billingCycle 
-      } 
+        billingCycle
+      }
     });
   };
 
@@ -205,56 +205,54 @@ export default function Pricing() {
 
   return (
     <Layout user={user}>
-      <div className="min-h-screen bg-black py-20 relative overflow-hidden smooth-page">
+      <div className="min-h-screen bg-background py-20 relative overflow-hidden smooth-page">
         {/* Large Background Text */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
-          <div className="text-[30rem] font-black text-zinc-800/30 tracking-tighter leading-none">
-            PrompX
+          <div className="text-[30rem] font-black text-foreground/5 tracking-tighter leading-none">
+            PromptX
           </div>
         </div>
-        
+
         {/* Subtle background pattern */}
         <div className="absolute inset-0 opacity-[0.03]">
           <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
             backgroundSize: '24px 24px'
           }} />
         </div>
-        
+
         <div className="responsive-container relative z-20">
           {/* Header */}
-          <div className="text-center mb-12 sm:mb-16 opacity-0" style={{animation: 'fadeIn 0.8s ease-out forwards'}}>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-              Choose Your <span className="text-white">Perfect Plan</span>
+          <div className="text-center mb-12 sm:mb-16 opacity-0" style={{ animation: 'fadeIn 0.8s ease-out forwards' }}>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 leading-tight">
+              Choose Your <span className="text-primary">Perfect Plan</span>
             </h1>
-            <p className="text-lg sm:text-xl text-zinc-400 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
+            <p className="text-lg sm:text-xl text-muted-foreground mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
               Unlock the full potential of AI-powered prompt engineering with our flexible pricing plans
             </p>
-            
+
             {/* Billing Toggle */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-8 sm:mb-12">
               <div className="flex items-center gap-4">
-                <span className={`text-base sm:text-lg font-medium ${billingCycle === 'monthly' ? 'text-white' : 'text-zinc-500'}`}>
+                <span className={`text-base sm:text-lg font-medium ${billingCycle === 'monthly' ? 'text-foreground' : 'text-muted-foreground'}`}>
                   Monthly
                 </span>
                 <button
                   onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors smooth-button ${
-                    billingCycle === 'yearly' ? 'bg-white' : 'bg-zinc-600'
-                  }`}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors smooth-button ${billingCycle === 'yearly' ? 'bg-primary' : 'bg-muted'
+                    }`}
                 >
                   <span
-                    className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                      billingCycle === 'yearly' ? 'bg-black translate-x-6' : 'bg-white translate-x-1'
-                    }`}
+                    className={`inline-block h-5 w-5 transform rounded-full transition-transform bg-background shadow-sm ${billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                   />
                 </button>
-                <span className={`text-base sm:text-lg font-medium ${billingCycle === 'yearly' ? 'text-white' : 'text-zinc-500'}`}>
+                <span className={`text-base sm:text-lg font-medium ${billingCycle === 'yearly' ? 'text-foreground' : 'text-muted-foreground'}`}>
                   Yearly
                 </span>
               </div>
               {billingCycle === 'yearly' && (
-                <Badge className="bg-white text-black font-bold px-3 py-1 text-sm">
+                <Badge className="bg-primary text-primary-foreground font-bold px-3 py-1 text-sm">
                   Save {getSavingsPercentage()}%
                 </Badge>
               )}
@@ -267,32 +265,31 @@ export default function Pricing() {
               const Icon = plan.icon;
               const isCurrentPlan = currentPlan === plan.planType;
               const price = billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly;
-              
+
               return (
                 <Card
                   key={plan.id}
-                  className={`relative bg-black border-white/[0.08] backdrop-blur-sm smooth-card ${
-                    plan.popular 
-                      ? 'border-white shadow-lg shadow-white/10 scale-105' 
-                      : isCurrentPlan 
-                        ? 'border-white shadow-lg shadow-white/10'
-                        : 'hover:border-white/20'
-                  }`}
+                  className={`relative bg-card border-border backdrop-blur-sm smooth-card ${plan.popular
+                    ? 'border-primary shadow-lg shadow-primary/10 scale-105'
+                    : isCurrentPlan
+                      ? 'border-primary shadow-lg shadow-primary/10'
+                      : 'hover:border-primary/20'
+                    }`}
                   style={{
                     animationDelay: `${index * 100}ms`
                   }}
                 >
                   {plan.popular && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <Badge className="bg-white text-black font-bold px-4 py-1">
+                      <Badge className="bg-primary text-primary-foreground font-bold px-4 py-1">
                         Most Popular
                       </Badge>
                     </div>
                   )}
-                  
+
                   {isCurrentPlan && (
                     <div className="absolute -top-4 right-4">
-                      <Badge className="bg-white text-black font-bold px-3 py-1">
+                      <Badge className="bg-primary text-primary-foreground font-bold px-3 py-1">
                         Current
                       </Badge>
                     </div>
@@ -300,29 +297,28 @@ export default function Pricing() {
 
                   <CardHeader className="text-center pb-4">
                     <div className="flex justify-center mb-4">
-                      <div className={`p-3 rounded-full ${
-                        plan.popular 
-                          ? 'bg-white/10 text-white' 
-                          : 'bg-white/5 text-zinc-300'
-                      }`}>
+                      <div className={`p-3 rounded-full ${plan.popular
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-muted text-muted-foreground'
+                        }`}>
                         <Icon className="w-8 h-8" />
                       </div>
                     </div>
-                    <CardTitle className="text-2xl font-bold text-white mb-2">
+                    <CardTitle className="text-2xl font-bold text-card-foreground mb-2">
                       {plan.name}
                     </CardTitle>
-                    <CardDescription className="text-zinc-400 mb-4">
+                    <CardDescription className="text-muted-foreground mb-4">
                       {plan.description}
                     </CardDescription>
                     <div className="text-center">
-                      <span className="text-4xl font-bold text-white">
+                      <span className="text-4xl font-bold text-card-foreground">
                         ${price}
                       </span>
-                      <span className="text-zinc-400 ml-2">
+                      <span className="text-muted-foreground ml-2">
                         /{billingCycle === 'monthly' ? 'month' : 'year'}
                       </span>
                       {billingCycle === 'yearly' && plan.price.monthly > 0 && (
-                        <div className="text-sm text-white mt-1">
+                        <div className="text-sm text-primary mt-1">
                           Save ${(plan.price.monthly * 12) - plan.price.yearly}/year
                         </div>
                       )}
@@ -331,12 +327,12 @@ export default function Pricing() {
 
                   <CardContent className="space-y-4">
                     <div>
-                      <h4 className="font-semibold text-white mb-3">Features included:</h4>
+                      <h4 className="font-semibold text-card-foreground mb-3">Features included:</h4>
                       <ul className="space-y-2">
                         {plan.features.map((feature, index) => (
                           <li key={index} className="flex items-start gap-3">
-                            <Check className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
-                            <span className="text-zinc-300 text-sm">{feature}</span>
+                            <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-muted-foreground text-sm">{feature}</span>
                           </li>
                         ))}
                       </ul>
@@ -345,13 +341,12 @@ export default function Pricing() {
 
                   <CardFooter className="pt-6">
                     <Button
-                      className={`w-full smooth-button ${
-                        plan.popular
-                          ? 'bg-white text-black hover:bg-zinc-100 font-bold'
-                          : isCurrentPlan
-                            ? 'bg-zinc-800 text-zinc-400 cursor-not-allowed border border-white/[0.08]'
-                            : 'bg-transparent border border-white/[0.08] text-white hover:bg-white/[0.08] hover:border-white/20'
-                      }`}
+                      className={`w-full smooth-button ${plan.popular
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 font-bold'
+                        : isCurrentPlan
+                          ? 'bg-muted text-muted-foreground cursor-not-allowed border border-border'
+                          : 'bg-transparent border border-input text-foreground hover:bg-accent hover:text-accent-foreground'
+                        }`}
                       disabled={isCurrentPlan}
                       onClick={() => handleSelectPlan(plan)}
                     >
@@ -365,23 +360,23 @@ export default function Pricing() {
 
           {/* FAQ Section */}
           <div className="mt-20 text-center">
-            <h2 className="text-3xl font-bold text-white mb-8">Frequently Asked Questions</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-8">Frequently Asked Questions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-white mb-2">Can I change plans anytime?</h3>
-                <p className="text-zinc-400">Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Can I change plans anytime?</h3>
+                <p className="text-muted-foreground">Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.</p>
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-white mb-2">What payment methods do you accept?</h3>
-                <p className="text-zinc-400">We accept all major credit cards, PayPal, and bank transfers for enterprise plans.</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">What payment methods do you accept?</h3>
+                <p className="text-muted-foreground">We accept all major credit cards, PayPal, and bank transfers for enterprise plans.</p>
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-white mb-2">Is there a free trial?</h3>
-                <p className="text-zinc-400">Our free plan gives you access to core features. You can upgrade anytime to unlock advanced capabilities.</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Is there a free trial?</h3>
+                <p className="text-muted-foreground">Our free plan gives you access to core features. You can upgrade anytime to unlock advanced capabilities.</p>
               </div>
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-white mb-2">Do you offer refunds?</h3>
-                <p className="text-zinc-400">Yes, we offer a 30-day money-back guarantee for all paid plans.</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Do you offer refunds?</h3>
+                <p className="text-muted-foreground">Yes, we offer a 30-day money-back guarantee for all paid plans.</p>
               </div>
             </div>
           </div>

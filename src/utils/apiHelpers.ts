@@ -1,4 +1,4 @@
-// API helper utilities for PrompX
+// API helper utilities for PromptX
 
 import { supabase } from "@/integrations/supabase/client";
 import { handleSupabaseError, withRetry, logError } from "./errorHandling";
@@ -79,11 +79,11 @@ export const userApi = {
         .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle();
-      
+
       if (error && error.code !== 'PGRST116') {
         throw handleSupabaseError(error);
       }
-      
+
       return !!data;
     } catch (error) {
       logError(handleSupabaseError(error), 'isAdmin');
@@ -103,11 +103,11 @@ export const subscriptionApi = {
         .eq('user_id', userId)
         .eq('status', 'active')
         .maybeSingle();
-      
+
       if (error && error.code !== 'PGRST116') {
         throw handleSupabaseError(error);
       }
-      
+
       return data;
     } catch (error) {
       logError(handleSupabaseError(error), 'getUserSubscription');
@@ -123,7 +123,7 @@ export const subscriptionApi = {
         .upsert(subscriptionData)
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       return data;
     });
@@ -134,7 +134,7 @@ export const subscriptionApi = {
     return withRetry(async () => {
       const { data, error } = await supabase
         .from('user_subscriptions')
-        .update({ 
+        .update({
           status: 'cancelled',
           cancelled_at: new Date().toISOString()
         })
@@ -142,7 +142,7 @@ export const subscriptionApi = {
         .eq('status', 'active')
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       return data;
     });
@@ -159,7 +159,7 @@ export const planApi = {
         .select('*')
         .eq('is_active', true)
         .order('price_monthly');
-      
+
       if (error) throw handleSupabaseError(error);
       return data || [];
     } catch (error) {
@@ -177,11 +177,11 @@ export const planApi = {
         .eq('plan_type', planType)
         .eq('is_active', true)
         .maybeSingle();
-      
+
       if (error && error.code !== 'PGRST116') {
         throw handleSupabaseError(error);
       }
-      
+
       return data;
     } catch (error) {
       logError(handleSupabaseError(error), 'getPlanByType');
@@ -205,7 +205,7 @@ export const usageApi = {
         })
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       return data;
     } catch (error) {
@@ -221,21 +221,21 @@ export const usageApi = {
         .from('usage_tracking')
         .select('*')
         .eq('user_id', userId);
-      
+
       if (feature) {
         query = query.eq('feature', feature);
       }
-      
+
       if (startDate) {
         query = query.gte('timestamp', startDate);
       }
-      
+
       if (endDate) {
         query = query.lte('timestamp', endDate);
       }
-      
+
       const { data, error } = await query.order('timestamp', { ascending: false });
-      
+
       if (error) throw handleSupabaseError(error);
       return data || [];
     } catch (error) {
@@ -259,7 +259,7 @@ export const promptApi = {
         })
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       return data;
     });
@@ -274,7 +274,7 @@ export const promptApi = {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(limit);
-      
+
       if (error) throw handleSupabaseError(error);
       return data || [];
     } catch (error) {
@@ -291,7 +291,7 @@ export const promptApi = {
         .delete()
         .eq('id', promptId)
         .eq('user_id', userId);
-      
+
       if (error) throw handleSupabaseError(error);
     });
   }
@@ -310,7 +310,7 @@ export const teamApi = {
         `)
         .eq('team_owner_id', userId)
         .eq('status', 'active');
-      
+
       if (error) throw handleSupabaseError(error);
       return data || [];
     } catch (error) {
@@ -333,7 +333,7 @@ export const teamApi = {
         })
         .select()
         .single();
-      
+
       if (error) throw handleSupabaseError(error);
       return data;
     });
@@ -347,7 +347,7 @@ export const healthCheck = async (): Promise<boolean> => {
       .from('subscription_plans')
       .select('id')
       .limit(1);
-    
+
     return !error;
   } catch (error) {
     logError(handleSupabaseError(error), 'healthCheck');
@@ -363,7 +363,7 @@ export const initializeApi = async (): Promise<void> => {
     if (!isHealthy) {
       throw new Error('Database connection failed');
     }
-    
+
     console.log('✅ API initialized successfully');
   } catch (error) {
     console.error('❌ API initialization failed:', error);

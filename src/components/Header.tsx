@@ -4,25 +4,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Sparkles, 
-  LogOut, 
-  Menu, 
-  ChevronDown, 
-  User as UserIcon, 
-  Layers, 
-  Bot, 
-  FileText, 
-  History, 
-  Workflow as WorkflowIcon, 
-  Scale, 
-  Key, 
-  BarChart3, 
-  ShieldCheck, 
-  Target, 
-  Beaker, 
-  Users, 
-  Building2, 
+import { Logo, LogoText } from '@/components/Logo';
+import {
+  Sparkles,
+  LogOut,
+  Menu,
+  ChevronDown,
+  User as UserIcon,
+  Layers,
+  Bot,
+  FileText,
+  History,
+  Workflow as WorkflowIcon,
+  Scale,
+  Key,
+  BarChart3,
+  ShieldCheck,
+  Target,
+  Beaker,
+  Users,
+  Building2,
   UsersRound,
   Home,
   LayoutDashboard,
@@ -55,17 +56,17 @@ export const Header = ({ user }: HeaderProps) => {
   React.useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) return;
-      
+
       const { data } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
         .maybeSingle();
-      
+
       setIsAdmin(!!data);
     };
-    
+
     checkAdminStatus();
   }, [user]);
 
@@ -140,19 +141,14 @@ export const Header = ({ user }: HeaderProps) => {
                   Sign Out
                 </Button>
               )}
-              
-              <button 
+
+
+              <button
                 onClick={() => navigate('/')}
                 className="flex items-center gap-2.5 flex-shrink-0 group"
               >
-                <div className="relative w-9 h-9 lg:w-10 lg:h-10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white via-zinc-100 to-zinc-200 rounded-lg rotate-0 group-hover:rotate-6 transition-transform duration-300" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-white to-zinc-100 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <Sparkles className="w-[1.125rem] h-[1.125rem] lg:w-5 lg:h-5 text-black" strokeWidth={2.5} />
-                  </div>
-                </div>
-                <span className="text-lg lg:text-xl font-black text-white tracking-tight group-hover:tracking-wide transition-all duration-300">
-                  PrompX
+                <span className="text-lg lg:text-xl font-black text-white tracking-tight group-hover:text-blue-400 transition-colors duration-300">
+                  PromptX
                 </span>
               </button>
             </div>
@@ -162,15 +158,14 @@ export const Header = ({ user }: HeaderProps) => {
               {primaryNavItems.map((link) => {
                 const isActive = window.location.pathname === link.path;
                 return (
-                <button
-                  key={link.path}
-                  onClick={() => navigate(link.path)}
-                  className={`relative group/btn px-3.5 xl:px-4 py-2 text-[0.8125rem] font-semibold rounded-lg transition-all duration-200 tracking-tight whitespace-nowrap flex items-center justify-center ${
-                    isActive
+                  <button
+                    key={link.path}
+                    onClick={() => navigate(link.path)}
+                    className={`relative group/btn px-3.5 xl:px-4 py-2 text-[0.8125rem] font-semibold rounded-lg transition-all duration-200 tracking-tight whitespace-nowrap flex items-center justify-center ${isActive
                       ? 'bg-white/10 text-white border border-white/20'
                       : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
-                  }`}
-                >
+                      }`}
+                  >
                     {link.name}
                     {isActive && (
                       <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 rounded-lg -z-10" />
@@ -178,7 +173,7 @@ export const Header = ({ user }: HeaderProps) => {
                   </button>
                 );
               })}
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="relative px-3.5 xl:px-4 py-2 text-[0.8125rem] font-semibold rounded-lg transition-all duration-200 tracking-tight whitespace-nowrap text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 flex items-center justify-center gap-1.5 group">
@@ -194,7 +189,7 @@ export const Header = ({ user }: HeaderProps) => {
                   {['Account', 'Tools', 'Settings', 'Advanced', 'Connect'].map((category, idx) => {
                     const categoryItems = moreNavItems.filter(item => item.category === category);
                     if (categoryItems.length === 0) return null;
-                    
+
                     return (
                       <div key={category} className={idx > 0 ? "border-t border-white/10 pt-2" : "pt-1"}>
                         <div className="px-4 pt-3 pb-2 text-[0.6875rem] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
@@ -261,63 +256,55 @@ export const Header = ({ user }: HeaderProps) => {
                 <div className="flex flex-col h-full pt-6">
                   {/* Mobile Logo */}
                   <div className="flex items-center gap-2.5 px-1 mb-8 flex-shrink-0">
-                    <div className="relative w-10 h-10">
-                      <div className="absolute inset-0 bg-gradient-to-br from-white to-zinc-100 rounded-lg" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-black" strokeWidth={2.5} />
-                      </div>
-                    </div>
                     <span className="text-xl font-black text-white tracking-tight">
-                      PrompX
+                      PromptX
                     </span>
                   </div>
 
                   {/* Scrollable Navigation */}
                   <ScrollArea className="flex-1 px-1">
                     <nav className="flex flex-col gap-3 pb-4">
-                    {['Main', 'Account', 'Tools', 'Settings', 'Advanced', 'Connect'].map((category) => {
-                      const categoryItems = category === 'Main' 
-                        ? primaryNavItems
-                        : moreNavItems.filter(item => item.category === category);
-                      
-                      if (categoryItems.length === 0) return null;
-                      
-                      return (
-                        <div key={category} className="mb-4">
-                          <div className="px-3 py-2 text-[0.6875rem] font-bold text-zinc-600 uppercase tracking-widest flex items-center gap-2">
-                            <div className="w-1 h-1 rounded-full bg-zinc-700" />
-                            {category}
-                          </div>
-                          <div className="space-y-1">
-                            {categoryItems.map((link) => {
-                              const isActive = window.location.pathname === link.path;
-                              const Icon = link.icon;
-                              return (
-                                <button
-                                  key={link.path}
-                                  onClick={() => {
-                                    navigate(link.path);
-                                    setMobileMenuOpen(false);
-                                  }}
-                                  className={`w-full text-left px-3 py-2.5 text-sm font-medium tracking-tight rounded-lg transition-all duration-200 flex items-center gap-3 border ${
-                                    isActive
+                      {['Main', 'Account', 'Tools', 'Settings', 'Advanced', 'Connect'].map((category) => {
+                        const categoryItems = category === 'Main'
+                          ? primaryNavItems
+                          : moreNavItems.filter(item => item.category === category);
+
+                        if (categoryItems.length === 0) return null;
+
+                        return (
+                          <div key={category} className="mb-4">
+                            <div className="px-3 py-2 text-[0.6875rem] font-bold text-zinc-600 uppercase tracking-widest flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                              {category}
+                            </div>
+                            <div className="space-y-1">
+                              {categoryItems.map((link) => {
+                                const isActive = window.location.pathname === link.path;
+                                const Icon = link.icon;
+                                return (
+                                  <button
+                                    key={link.path}
+                                    onClick={() => {
+                                      navigate(link.path);
+                                      setMobileMenuOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2.5 text-sm font-medium tracking-tight rounded-lg transition-all duration-200 flex items-center gap-3 border ${isActive
                                       ? 'bg-white/10 text-white border-white/20'
                                       : 'text-zinc-400 hover:text-white hover:bg-white/5 border-transparent hover:border-white/10'
-                                  }`}
-                                >
-                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 border ${
-                                    isActive ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/10'
-                                  }`}>
-                                    <Icon className="w-4 h-4" strokeWidth={2} />
-                                  </div>
-                                  <span>{link.name}</span>
-                                </button>
-                              );
-                            })}
+                                      }`}
+                                  >
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 border ${isActive ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/10'
+                                      }`}>
+                                      <Icon className="w-4 h-4" strokeWidth={2} />
+                                    </div>
+                                    <span>{link.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
                     </nav>
                   </ScrollArea>
 

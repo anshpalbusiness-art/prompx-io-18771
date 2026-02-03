@@ -1,4 +1,4 @@
-# Performance Optimizations - PrompX
+# Performance Optimizations - PromptX
 
 ## Overview
 This document outlines all performance optimizations implemented to ensure zero lag, no frame drops, and ultra-smooth user experience across the entire website.

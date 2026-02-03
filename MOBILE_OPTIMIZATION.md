@@ -1,4 +1,4 @@
-# Mobile Optimization - PrompX
+# Mobile Optimization - PromptX
 
 ## Overview
 Complete mobile optimization implemented across the entire website to ensure perfect alignment, structure, and user experience on mobile devices while maintaining all existing design, UI, and colors.
