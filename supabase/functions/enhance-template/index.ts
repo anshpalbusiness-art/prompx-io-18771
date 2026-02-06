@@ -2,12 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -20,97 +20,60 @@ serve(async (req) => {
       );
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log('Enhancing template with Claude intelligence...');
+    console.log('Enhancing template with AI...');
     
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'google/gemini-2.5-flash',
         max_tokens: 4096,
         temperature: 0.8,
         messages: [
           {
             role: 'user',
-            content: `As an expert prompt engineer and ${industry} specialist, enhance and customize this template to be more effective, specific, and intelligent.
+            content: `As an expert prompt engineer and ${industry} specialist, enhance this template:
 
-**Original Template:**
-${template}
+**Original Template:** ${template}
+**Industry:** ${industry}
+**Customization:** ${customization || 'Make it more effective and industry-specific'}
 
-**Industry Context:** ${industry}
-
-**Customization Requirements:**
-${customization || 'Make it more effective and industry-specific'}
-
-**Enhancement Guidelines:**
-
-1. **Industry-Specific Intelligence**
-   - Add relevant ${industry} terminology and best practices
-   - Include industry-specific metrics and KPIs
-   - Reference current trends and standards
-   - Incorporate regulatory or compliance considerations if relevant
-
-2. **Prompt Optimization**
-   - Make instructions more clear and actionable
-   - Add specific examples and use cases
-   - Include success criteria and quality checks
-   - Specify output format and structure
-
-3. **Advanced Features**
-   - Add strategic thinking elements
-   - Include competitive analysis angles
-   - Incorporate psychological triggers
-   - Add personalization variables
-
-4. **Quality Improvements**
-   - Remove ambiguity and vagueness
-   - Add concrete constraints and requirements
-   - Include validation steps
-   - Specify tone and style precisely
-
-5. **Practical Enhancements**
-   - Add relevant context variables
-   - Include edge case handling
-   - Specify follow-up questions
-   - Add iterative improvement hooks
-
-Provide the enhanced template that is significantly more intelligent, specific, and effective than the original. The enhanced version should produce superior results while maintaining ease of use.`
+Provide an enhanced template that is significantly more intelligent, specific, and effective.`
           }
         ]
       }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI API error:', response.status, errorText);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402 || response.status === 400) {
+      if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'API error. Please check your Anthropic API key.' }),
+          JSON.stringify({ error: 'Insufficient credits.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      const errorText = await response.text();
-      console.error('Claude API error:', response.status, errorText);
-      throw new Error(`Claude API error: ${response.status}`);
+      throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const enhancedTemplate = data.content[0].text;
+    const enhancedTemplate = data.choices?.[0]?.message?.content || '';
     
-    console.log('Template enhancement completed successfully');
+    console.log('Template enhancement completed');
 
     return new Response(
       JSON.stringify({ enhancedTemplate }),

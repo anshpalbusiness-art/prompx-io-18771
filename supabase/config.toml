@@ -1,1 +1,104 @@
-project_id = "liymgsmyickbgrmmnetd"
+project_id = "bwawaaocpettgbdtgkct"
+
+[api]
+enabled = true
+port = 54321
+
+[functions.ab-test-manager]
+verify_jwt = false
+
+[functions.adaptive-learning]
+verify_jwt = false
+
+[functions.aggregate-global-insights]
+verify_jwt = false
+
+[functions.ai-analytics-engine]
+verify_jwt = false
+
+[functions.analyze-prompt-relationships]
+verify_jwt = false
+
+[functions.analyze-vision]
+verify_jwt = false
+
+[functions.analyze-website]
+verify_jwt = false
+
+[functions.auto-optimize-prompt]
+verify_jwt = false
+
+[functions.auto-optimize-scheduler]
+verify_jwt = false
+
+[functions.benchmark-prompt]
+verify_jwt = false
+
+[functions.check-prompt-compliance]
+verify_jwt = false
+
+[functions.compliance-scanner]
+verify_jwt = false
+
+[functions.copilot-chat]
+verify_jwt = false
+
+[functions.enhance-template]
+verify_jwt = false
+
+[functions.execute-agent]
+verify_jwt = false
+
+[functions.execute-claude]
+verify_jwt = false
+
+[functions.execute-prompt]
+verify_jwt = false
+
+[functions.generate-agent-workflow]
+verify_jwt = false
+
+[functions.intelligent-analytics]
+verify_jwt = false
+
+[functions.intelligent-marketplace]
+verify_jwt = false
+
+[functions.intelligent-optimizer]
+verify_jwt = false
+
+[functions.intelligent-prompt-generator]
+verify_jwt = false
+
+[functions.intelligent-workflow]
+verify_jwt = false
+
+[functions.optimize-prompt]
+verify_jwt = false
+
+[functions.personalization-engine]
+verify_jwt = false
+
+[functions.predictive-insights]
+verify_jwt = false
+
+[functions.proofread-prompt]
+verify_jwt = false
+
+[functions.sanitize-prompt]
+verify_jwt = false
+
+[functions.sdk-generate-prompt]
+verify_jwt = false
+
+[functions.send-otp-email]
+verify_jwt = false
+
+[functions.translate-prompt]
+verify_jwt = false
+
+[functions.web-research]
+verify_jwt = false
+
+[functions.whop-webhook]
+verify_jwt = false
