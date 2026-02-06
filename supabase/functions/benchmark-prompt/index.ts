@@ -2,12 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -17,33 +17,28 @@ serve(async (req) => {
       throw new Error('Prompt is required');
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-    
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Use only Claude for superior benchmarking
     const models = [
-      { name: 'Claude Sonnet 4.5', id: 'claude-sonnet-4-5', description: 'Superior reasoning & intelligence' },
+      { name: 'Gemini 2.5 Flash', id: 'google/gemini-2.5-flash', description: 'Fast & balanced' },
+      { name: 'GPT-5 Mini', id: 'openai/gpt-5-mini', description: 'Strong reasoning, lower cost' },
     ];
 
-    // Call all models in parallel
     const results = await Promise.all(
       models.map(async (model) => {
         const startTime = Date.now();
-        
         try {
-          // Use Claude API
-          const response = await fetch('https://api.anthropic.com/v1/messages', {
+          const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'x-api-key': ANTHROPIC_API_KEY,
-              'anthropic-version': '2023-06-01',
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-5',
+              model: model.id,
               max_tokens: 2000,
               messages: [{ role: 'user', content: prompt }],
             }),
@@ -58,9 +53,7 @@ serve(async (req) => {
           }
 
           const data = await response.json();
-          const content = data.content?.[0]?.text || '';
-
-          // Calculate quality scores
+          const content = data.choices?.[0]?.message?.content || '';
           const scores = calculateQualityScores(content, prompt);
 
           return {
@@ -78,11 +71,7 @@ serve(async (req) => {
             modelId: model.id,
             response: '',
             responseTime: Date.now() - startTime,
-            clarityScore: 0,
-            originalityScore: 0,
-            depthScore: 0,
-            relevanceScore: 0,
-            overallScore: 0,
+            clarityScore: 0, originalityScore: 0, depthScore: 0, relevanceScore: 0, overallScore: 0,
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error',
           };
@@ -98,115 +87,46 @@ serve(async (req) => {
     console.error('Benchmark error:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
 function calculateQualityScores(response: string, prompt: string) {
-  // Advanced Clarity Score: Readability, structure, and coherence
   const sentences = response.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const avgSentenceLength = response.length / Math.max(sentences.length, 1);
+  
   const clarityScore = Math.min(100, Math.round(
-    (sentences.length >= 3 ? 15 : sentences.length * 5) + // Sentence variety
-    (response.split('\n\n').length * 5) + // Paragraph organization
-    (avgSentenceLength > 15 && avgSentenceLength < 35 ? 15 : 5) + // Optimal sentence length
-    (hasProperCapitalization(response) ? 15 : 0) + // Grammar
-    (response.includes(':') || response.includes('-') ? 10 : 0) + // Structured formatting
-    (response.length > 150 ? 20 : response.length / 10) + // Adequate detail
-    20 // Base score
+    (sentences.length >= 3 ? 15 : sentences.length * 5) +
+    (response.split('\n\n').length * 5) +
+    (avgSentenceLength > 15 && avgSentenceLength < 35 ? 15 : 5) +
+    (response.includes(':') || response.includes('-') ? 10 : 0) +
+    (response.length > 150 ? 20 : response.length / 10) + 35
   ));
 
-  // Enhanced Originality Score: Creativity, uniqueness, and engagement
-  const uniqueWordRatio = countUniqueWords(response) / response.split(/\s+/).length;
+  const words = response.toLowerCase().match(/\b\w+\b/g) || [];
+  const uniqueWordRatio = new Set(words).size / Math.max(words.length, 1);
   const originalityScore = Math.min(100, Math.round(
-    (uniqueWordRatio * 40) + // Vocabulary richness
-    (hasExamples(response) ? 15 : 0) + // Practical examples
-    (hasMetaphors(response) ? 15 : 0) + // Creative language
-    (response.length > 250 ? 15 : response.length / 20) + // Comprehensive response
-    (hasQuestions(response) ? 5 : 0) + // Engaging elements
-    (hasNumbersOrStats(response) ? 5 : 0) + // Data-driven content
-    25 // Base score
+    (uniqueWordRatio * 40) +
+    (/for example|such as|e\.g\./i.test(response) ? 15 : 0) +
+    (response.length > 250 ? 15 : response.length / 20) + 30
   ));
 
-  // Advanced Depth Score: Thoroughness, analysis, and insight
-  const explanationDensity = countExplanations(response) / Math.max(sentences.length, 1);
   const depthScore = Math.min(100, Math.round(
-    (response.length / 8) + // Comprehensive length
-    (explanationDensity * 100) + // Explanation density
-    (hasStructuredContent(response) ? 20 : 0) + // Organized content
-    (mentionsMultiplePerspectives(response) ? 15 : 0) + // Multi-faceted analysis
-    (hasCausalReasoning(response) ? 10 : 0) + // Logical reasoning
-    (hasComparisons(response) ? 10 : 0) + // Analytical depth
-    15 // Base score
+    (response.length / 8) +
+    (/^\d+\.|^[-*•]/m.test(response) ? 20 : 0) +
+    (/however|alternatively|on the other hand/i.test(response) ? 15 : 0) +
+    (/because|therefore|consequently/i.test(response) ? 10 : 0) + 15
   ));
 
-  // Prompt Relevance Score: How well the response addresses the prompt
   const promptWords = prompt.toLowerCase().split(/\s+/).filter(w => w.length > 3);
   const responseWords = response.toLowerCase().split(/\s+/);
   const relevanceScore = Math.min(100, Math.round(
-    (promptWords.filter(w => responseWords.includes(w)).length / promptWords.length * 50) +
-    (response.length > 100 ? 25 : response.length / 5) +
-    25
+    (promptWords.filter(w => responseWords.includes(w)).length / Math.max(promptWords.length, 1) * 50) +
+    (response.length > 100 ? 25 : response.length / 5) + 25
   ));
 
-  const overallScore = Math.round((clarityScore * 0.25 + originalityScore * 0.25 + depthScore * 0.3 + relevanceScore * 0.2));
+  const overallScore = Math.round(clarityScore * 0.25 + originalityScore * 0.25 + depthScore * 0.3 + relevanceScore * 0.2);
 
-  return {
-    clarityScore,
-    originalityScore,
-    depthScore,
-    relevanceScore,
-    overallScore,
-  };
-}
-
-function hasProperCapitalization(text: string): boolean {
-  const sentences = text.split(/[.!?]+/);
-  return sentences.filter(s => s.trim() && /^[A-Z]/.test(s.trim())).length > sentences.length * 0.7;
-}
-
-function countUniqueWords(text: string): number {
-  const words = text.toLowerCase().match(/\b\w+\b/g) || [];
-  return new Set(words).size;
-}
-
-function hasExamples(text: string): boolean {
-  return /for example|such as|for instance|like|e\.g\./i.test(text);
-}
-
-function hasMetaphors(text: string): boolean {
-  return /like a|as if|similar to|resembles|metaphorically/i.test(text);
-}
-
-function countExplanations(text: string): number {
-  const explanatoryPhrases = /because|since|due to|therefore|thus|consequently|as a result|this means/gi;
-  return (text.match(explanatoryPhrases) || []).length;
-}
-
-function hasStructuredContent(text: string): boolean {
-  return /^\d+\.|^[-*•]|^[a-z]\)/m.test(text) || text.split('\n').length > 3;
-}
-
-function mentionsMultiplePerspectives(text: string): boolean {
-  return /on one hand|on the other hand|however|alternatively|another view|different perspective|conversely|in contrast/i.test(text);
-}
-
-function hasQuestions(text: string): boolean {
-  return /\?/.test(text);
-}
-
-function hasNumbersOrStats(text: string): boolean {
-  return /\d+%|\d+\.\d+|\d+ (percent|times|studies|research)/i.test(text);
-}
-
-function hasCausalReasoning(text: string): boolean {
-  return /because|since|therefore|thus|consequently|as a result|this leads to|this causes/i.test(text);
-}
-
-function hasComparisons(text: string): boolean {
-  return /compared to|versus|vs\.|better than|worse than|similar to|unlike|in comparison/i.test(text);
+  return { clarityScore, originalityScore, depthScore, relevanceScore, overallScore };
 }
