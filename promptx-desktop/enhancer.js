@@ -2,7 +2,20 @@
 // No proxy server needed — calls Grok API directly
 
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+// Try multiple .env locations: packaged app resources, same dir, parent dir
+const envPaths = [
+    path.join(process.resourcesPath || __dirname, '.env'),
+    path.join(__dirname, '.env'),
+    path.join(__dirname, '..', '.env'),
+];
+for (const p of envPaths) {
+    const result = require('dotenv').config({ path: p });
+    if (!result.error) {
+        console.log('✅ Loaded .env from:', p);
+        break;
+    }
+}
 
 const XAI_API_KEY = process.env.XAI_API_KEY;
 const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
