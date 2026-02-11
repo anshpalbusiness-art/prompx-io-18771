@@ -41,7 +41,7 @@ const Dashboard = () => {
   }
 
   return (
-    <Layout user={user}>
+    <Layout user={user} showHeader={false}>
       <div className="w-full min-h-screen bg-background">
         <DashboardChatbot />
       </div>

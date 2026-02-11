@@ -271,7 +271,7 @@ const Admin = () => {
   }
 
   return (
-    <Layout user={user}>
+    <Layout user={user} showHeader={false}>
       <div className="w-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         <div className="container mx-auto max-w-7xl py-8 px-4">
           <div className="mb-8">

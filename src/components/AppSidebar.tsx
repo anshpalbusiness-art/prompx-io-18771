@@ -29,6 +29,8 @@ import {
   Building2,
   UsersRound,
   ChevronRight,
+  PanelLeft,
+  PanelLeftClose,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -44,6 +46,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 import {
@@ -652,6 +655,15 @@ export const AppSidebar = React.memo(({ user }: AppSidebarProps) => {
                 </div>
               </SidebarMenuButton>
             )}
+          </SidebarMenuItem>
+
+          {/* Sidebar Toggle Button */}
+          <SidebarMenuItem>
+            <SidebarTrigger className="w-full h-10 rounded-xl bg-sidebar-accent/50 hover:bg-sidebar-accent text-sidebar-foreground hover:text-sidebar-foreground transition-all duration-300 border border-sidebar-border shadow-sm flex items-center justify-center gap-2 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:!h-10 group-data-[collapsible=icon]:!w-10 group-data-[collapsible=icon]:!min-w-10 group-data-[collapsible=icon]:!max-w-10">
+              <PanelLeftClose className="h-4 w-4 group-data-[collapsible=icon]:hidden" />
+              <PanelLeft className="h-4 w-4 hidden group-data-[collapsible=icon]:block" />
+              <span className="text-xs font-medium group-data-[collapsible=icon]:hidden">Collapse</span>
+            </SidebarTrigger>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

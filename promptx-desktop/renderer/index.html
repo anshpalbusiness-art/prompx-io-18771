@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptX</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="overlay">
+        <!-- Header -->
+        <div class="header" id="drag-region">
+            <div class="header-left">
+                <div class="logo-container">
+                    <img src="../assets/logo.png" alt="PromptX" class="logo-img">
+                </div>
+                <div class="app-name">PromptX</div>
+            </div>
+
+            <div class="header-right">
+                <div class="status-badge">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text">READY</span>
+                </div>
+                <button class="btn-icon" id="close-btn" title="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+
+            <!-- Idle State: Waiting for input -->
+            <div class="idle-state" id="idle-state">
+                <div class="monitor-dot"></div>
+                <span>Watching for your prompts... Type anything and I'll suggest improvements ✨</span>
+            </div>
+
+            <!-- Result State: Enhanced prompt -->
+            <div class="result-state" id="result-state">
+                <div class="result-header">
+                    <div class="result-label">
+                        <span>✨</span>
+                        <span>Enhanced Prompt</span>
+                    </div>
+                    <div class="char-count" id="char-count">24 -> 251 chars (↑946%)</div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-text" id="result-text"></div>
+                </div>
+
+                <div class="action-row">
+                    <button class="btn btn-primary" id="copy-btn">
+                        <span>⚡ Use</span>
+                    </button>
+                    <button class="btn btn-secondary" id="copy-text-btn">
+                        <span>📋 Copy</span>
+                    </button>
+                    <button class="btn btn-secondary" id="undo-btn">
+                        <span>↩ Undo</span>
+                    </button>
+                </div>
+
+                <div class="pro-tips" id="tips-section" style="display:none;">
+                    <div class="tips-header">
+                        <span class="tips-icon">💡</span>
+                        <span>Pro Tips</span>
+                    </div>
+                    <div class="tips-content" id="tips-text"></div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="idle-state hidden" id="loading-state">
+                <div class="monitor-dot"
+                    style="animation: spin 1s linear infinite; border: 2px solid #8b5cf6; border-top-color: transparent; background: transparent;">
+                </div>
+                <span>Enhancing your prompt...</span>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <span class="powered-by">Powered by PromptX AI</span>
+            <label class="toggle-switch">
+                <input type="checkbox" checked class="toggle-input" id="auto-enhance-toggle">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="copied-toast" id="toast">Copied to clipboard!</div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

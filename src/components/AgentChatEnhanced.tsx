@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Loader2, Send, User, Bot, Download, Trash2, Copy, CheckCircle, 
-  Save, BarChart3, Upload, X, Sparkles 
+import {
+  Loader2, Send, User, Bot, Download, Trash2, Copy, CheckCircle,
+  Save, BarChart3, Upload, X, Sparkles
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +50,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
   useEffect(() => {
     // Generate conversation ID on mount
     setConversationId(crypto.randomUUID());
-    
+
     // Generate initial suggested prompts
     generateSuggestedPrompts();
   }, []);
@@ -66,7 +66,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
     const tokens = messages.reduce((sum, msg) => sum + (msg.tokensUsed || 0), 0);
     const times = messages.filter(msg => msg.responseTime).map(msg => msg.responseTime!);
     const avg = times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0;
-    
+
     setTotalTokens(tokens);
     setAvgResponseTime(avg);
   }, [messages]);
@@ -103,8 +103,8 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
         // Use the reframed response directly as the AI's answer
         setMessages((prev) => [
           ...prev,
-          { 
-            role: 'assistant', 
+          {
+            role: 'assistant',
             content: sanitizeData.sanitizedPrompt,
             timestamp: Date.now(),
           }
@@ -123,7 +123,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
       }));
 
       const { data, error } = await supabase.functions.invoke('execute-agent', {
-        body: { 
+        body: {
           agentId: agent.id,
           userInput: promptToUse,
           conversationHistory,
@@ -137,8 +137,8 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
 
       setMessages((prev) => [
         ...prev,
-        { 
-          role: 'assistant', 
+        {
+          role: 'assistant',
           content: data.response,
           timestamp: Date.now(),
           tokensUsed: data.tokensUsed,
@@ -154,10 +154,10 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
       }
     } catch (error) {
       console.error('Error executing agent:', error);
-      
+
       let errorMessage = "Failed to get response from agent. Please try again.";
       let errorTitle = "Error";
-      
+
       if (error instanceof Error) {
         if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
           errorTitle = "Rate Limit Exceeded";
@@ -172,7 +172,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
@@ -237,7 +237,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
     const conversationText = messages
       .map(msg => `${msg.role === 'user' ? 'You' : agent.name}: ${msg.content}`)
       .join('\n\n');
-    
+
     const blob = new Blob([conversationText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -312,7 +312,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
             </div>
           )}
         </div>
-        
+
         {/* Analytics Bar */}
         {messages.length > 0 && (
           <div className="flex gap-4 text-xs text-muted-foreground mt-2">
@@ -344,7 +344,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
               <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
                 {agent.description || "Ask me anything and I'll provide context-aware, intelligent responses."}
               </p>
-              
+
               {/* Suggested Prompts */}
               {suggestedPrompts.length > 0 && (
                 <div className="flex flex-wrap gap-2 justify-center mt-6">
@@ -370,11 +370,10 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
             messages.map((message, index) => (
               <Card
                 key={index}
-                className={`p-4 group relative ${
-                  message.role === 'user'
+                className={`p-4 group relative ${message.role === 'user'
                     ? 'bg-primary/10 ml-auto max-w-[80%]'
                     : 'bg-muted max-w-[80%]'
-                }`}
+                  }`}
               >
                 <div className="flex gap-3">
                   {message.role === 'user' ? (
@@ -452,7 +451,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
             ))}
           </div>
         )}
-        
+
         <div className="flex gap-2">
           <input
             ref={fileInputRef}

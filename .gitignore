@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+promptx-desktop/dist/
+.env
+promptx-desktop/.env

@@ -122,9 +122,9 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                             onClose();
                                         }}
                                     >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-sm font-semibold text-foreground truncate mb-1.5 pr-2">
+                                        <div className="flex items-center justify-between gap-3 w-full pr-1">
+                                            <div className="flex-1 min-w-0 grid gap-0.5">
+                                                <h3 className="text-sm font-semibold text-foreground truncate">
                                                     {session.title}
                                                 </h3>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -148,7 +148,7 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                                     onDeleteChat(session.id);
                                                     setSessions(chatStorage.getAllSessions());
                                                 }}
-                                                className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all flex-shrink-0"
+                                                className="h-8 w-8 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all flex-shrink-0"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
                                             </Button>

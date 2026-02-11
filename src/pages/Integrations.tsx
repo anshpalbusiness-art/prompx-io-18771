@@ -152,7 +152,7 @@ export default function Integrations() {
   ];
 
   return (
-    <Layout user={user}>
+    <Layout user={user} showHeader={false}>
       <div className="container mx-auto p-6 space-y-8">
       <div className="space-y-4">
         <div className="flex items-center gap-3">

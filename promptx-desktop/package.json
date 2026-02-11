@@ -1,0 +1,49 @@
+{
+    "name": "promptx-desktop",
+    "version": "1.0.0",
+    "description": "PromptX — AI Prompt Enhancer for your Desktop",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build:mac": "electron-builder --mac",
+        "build:win": "electron-builder --win",
+        "build:all": "electron-builder --mac --win"
+    },
+    "build": {
+        "appId": "com.promptx.desktop",
+        "productName": "PromptX",
+        "mac": {
+            "category": "public.app-category.productivity",
+            "icon": "assets/app-icon.icns",
+            "target": [
+                "dmg",
+                "zip"
+            ]
+        },
+        "win": {
+            "icon": "assets/app-icon.ico",
+            "target": [
+                "nsis"
+            ]
+        },
+        "files": [
+            "main.js",
+            "preload.js",
+            "enhancer.js",
+            "keystroke-monitor.js",
+            "accessibility.js",
+            ".env",
+            "renderer/**/*",
+            "assets/**/*"
+        ]
+    },
+    "devDependencies": {
+        "electron": "^33.0.0",
+        "electron-builder": "^25.0.0"
+    },
+    "dependencies": {
+        "dotenv": "^16.3.1",
+        "node-fetch": "^3.3.2",
+        "node-global-key-listener": "^0.3.0"
+    }
+}

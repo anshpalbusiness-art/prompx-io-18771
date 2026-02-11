@@ -43,7 +43,7 @@ const Marketplace = () => {
   }
 
   return (
-    <Layout user={user}>
+    <Layout user={user} showHeader={false}>
       <div className="w-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         <div className="container-responsive mx-auto max-w-6xl py-8 sm:py-12 md:py-16 lg:py-20">
           <div className="mb-6 sm:mb-8 md:mb-10 lg:mb-12 space-y-2 sm:space-y-3 md:space-y-4">

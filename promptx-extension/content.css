@@ -1,0 +1,461 @@
+/* PromptX Floating Widget — Cosmic Glass Theme */
+/* Note: @import url() for Google Fonts is NOT used here because Chrome extension
+   Content Security Policy blocks external font loading in content scripts.
+   We rely on system fonts as fallback: system-ui, -apple-system, sans-serif */
+
+#promptx-widget {
+    /* Scoped Design Tokens */
+    --px-bg: 0 0% 0%;
+    --px-fg: 210 40% 98%;
+    --px-primary: 227 100% 65%;
+    --px-primary-glow: 227 100% 65%;
+    --px-border: 217.2 32.6% 17.5%;
+    --px-radius: 16px;
+    --px-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 340px;
+    min-width: 340px;
+    max-width: 340px;
+
+    /* Cosmic Glass Background */
+    background: rgba(2, 6, 23, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+
+    border-radius: var(--px-radius);
+    box-shadow:
+        0 20px 50px -10px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 0 30px rgba(79, 70, 229, 0.15);
+
+    color: hsl(var(--px-fg));
+    font-family: var(--px-font);
+    z-index: 2147483647;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 1;
+    transform: translateY(0);
+    animation: promptx-entrance 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes promptx-entrance {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+#promptx-widget * {
+    box-sizing: border-box;
+}
+
+#promptx-widget.promptx-minimized {
+    width: auto;
+    min-width: auto;
+    max-width: 340px;
+    height: 46px;
+    border-radius: 23px;
+    background: rgba(2, 6, 23, 0.95);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+#promptx-widget.promptx-minimized .promptx-header {
+    padding: 0 16px;
+    border-bottom: none;
+    height: 46px;
+}
+
+#promptx-widget.promptx-minimized .promptx-body,
+#promptx-widget.promptx-minimized .promptx-footer {
+    display: none;
+}
+
+/* ========== Header ========== */
+.promptx-header {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.04), transparent);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: move;
+    user-select: none;
+    gap: 0;
+    height: 50px;
+}
+
+.promptx-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    color: white;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.promptx-logo img {
+    display: block;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    flex-shrink: 0;
+}
+
+.promptx-logo svg {
+    color: #a5b4fc;
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+}
+
+.promptx-badge {
+    font-size: 9px;
+    padding: 5px 10px;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.promptx-close {
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    margin-left: 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.promptx-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* ========== Body ========== */
+.promptx-body {
+    padding: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    transition: max-height 0.3s ease;
+}
+
+/* ========== Status ========== */
+.promptx-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 0;
+}
+
+.promptx-pulse {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #10b981;
+    animation: promptx-pulse 2s infinite;
+    flex-shrink: 0;
+}
+
+@keyframes promptx-pulse {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+}
+
+/* ========== Enhanced Section ========== */
+.promptx-enhanced {
+    animation: promptx-fadeIn 0.4s ease;
+}
+
+@keyframes promptx-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.promptx-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #a5b4fc;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.promptx-enhanced-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: pre-wrap;
+    margin-bottom: 20px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ========== Buttons ========== */
+.promptx-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.promptx-btn {
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+    font-family: inherit;
+}
+
+.promptx-btn-primary {
+    background: white;
+    color: #0f172a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.promptx-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+}
+
+/* Shimmer effect on primary button when enhancement is ready */
+.promptx-enhanced .promptx-btn-primary {
+    background: linear-gradient(110deg, white 40%, #e0e7ff 50%, white 60%);
+    background-size: 200% 100%;
+    animation: promptx-shimmer 2s ease-in-out;
+}
+
+@keyframes promptx-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.promptx-btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.promptx-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* ========== Tips ========== */
+.promptx-tips {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.promptx-tips-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #a5b4fc;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.promptx-tips-text {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+}
+
+/* ========== Loading Spinner ========== */
+.promptx-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 40px 0;
+}
+
+.promptx-loading span {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+.promptx-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: promptx-spin 1s linear infinite;
+}
+
+@keyframes promptx-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ========== Disabled State ========== */
+#promptx-widget.promptx-disabled .promptx-body {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+#promptx-widget.promptx-disabled .promptx-badge {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ========== Footer ========== */
+.promptx-footer {
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.promptx-powered {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.5px;
+}
+
+.promptx-branding {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.5px;
+}
+
+/* Toggle switch in footer */
+.promptx-toggle {
+    width: 36px;
+    height: 20px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+    padding: 0;
+}
+
+.promptx-toggle.active {
+    background: rgba(79, 70, 229, 0.6);
+    border-color: rgba(79, 70, 229, 0.3);
+}
+
+.promptx-toggle-dot {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.promptx-toggle.active .promptx-toggle-dot {
+    transform: translateX(16px);
+}
+
+/* ========== Scrollbar ========== */
+.promptx-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.promptx-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.promptx-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.promptx-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

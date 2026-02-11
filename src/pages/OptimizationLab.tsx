@@ -40,7 +40,7 @@ const OptimizationLab = () => {
   }
 
   return (
-    <Layout user={user}>
+    <Layout user={user} showHeader={false}>
       <div className="w-full min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         <div className="container-responsive mx-auto max-w-7xl py-8 sm:py-12 md:py-16 lg:py-20">
           <PromptOptimizationLab userId={user?.id || ""} />

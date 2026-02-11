@@ -101,7 +101,7 @@ export default function Payment() {
   // Render Success State
   if (status === 'success') {
     return (
-      <Layout user={user}>
+      <Layout user={user} showHeader={false}>
         <div className="min-h-screen bg-black flex items-center justify-center p-4">
           <Card className="max-w-md w-full bg-zinc-950 border-white/10 shadow-2xl">
             <CardHeader className="text-center pb-2">
@@ -132,7 +132,7 @@ export default function Payment() {
   // Render Cancel/Error State
   if (status === 'cancel') {
     return (
-      <Layout user={user}>
+      <Layout user={user} showHeader={false}>
         <div className="min-h-screen bg-black flex items-center justify-center p-4">
           <Card className="max-w-md w-full bg-zinc-950 border-white/10 shadow-2xl">
             <CardHeader className="text-center pb-2">
@@ -172,7 +172,7 @@ export default function Payment() {
   if (!state) return null;
 
   return (
-    <Layout user={user}>
+    <Layout user={user} showHeader={false}>
       <div className="min-h-screen bg-black py-16 relative overflow-hidden smooth-page">
         {/* Large Background Text */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">

@@ -1,0 +1,196 @@
+/* PromptX "Cosmic Glass" Design System */
+:root {
+    /* Core Colors (Dark Mode Default) */
+    --background: 222.2 84% 4.9%;
+    /* Deep Space Black/Blue */
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    /* Bright Cosmic Blue/Purple */
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* Gradients */
+    --gradient-bg: linear-gradient(180deg, hsl(222 84% 5%) 0%, hsl(217 33% 10%) 100%);
+    --gradient-card: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(220 20% 20%) 0%, hsl(220 15% 35%) 100%);
+    --gradient-glow: linear-gradient(90deg, #4f46e5, #ec4899);
+    /* Indigo to Pink */
+    --gradient-text: linear-gradient(to bottom, #ffffff, rgba(255, 255, 255, 0.7));
+
+    /* Radius & Spacing */
+    --radius: 1rem;
+    /* 16px for that modern rounded look */
+    --radius-sm: 0.75rem;
+    --radius-lg: 1.5rem;
+
+    /* Shadows & Glows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    --shadow-cosmic: 0 0 25px rgba(79, 70, 229, 0.15), 0 0 50px rgba(79, 70, 229, 0.05);
+    --shadow-neon: 0 0 10px rgba(79, 70, 229, 0.5);
+
+    /* Fonts */
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+    /* Animations */
+    --ease-elastic: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: hsl(222 84% 5%);
+    /* Fallback */
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    /* Prevent scroll on body, let containers scroll */
+}
+
+/* Cosmic Background wrapper */
+.cosmic-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(79, 70, 229, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
+    z-index: -2;
+    pointer-events: none;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s var(--ease-elastic);
+}
+
+.glass-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-cosmic);
+}
+
+/* Typography Overrides */
+h1,
+h2,
+h3,
+.title-text {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Button Upgrades */
+.btn-cosmic-primary {
+    position: relative;
+    background: hsl(var(--foreground));
+    color: hsl(var(--background));
+    font-weight: 600;
+    border: none;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.btn-cosmic-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.btn-cosmic-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: hsl(var(--foreground));
+    transition: all 0.2s;
+}
+
+.btn-cosmic-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Gradient Borders */
+.gradient-border-bottom {
+    position: relative;
+}
+
+.gradient-border-bottom::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+/* Animations */
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(79, 70, 229, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+    }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 3s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.shimmer-text {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), #fff, rgba(255, 255, 255, 0.8));
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 5s linear infinite;
+}

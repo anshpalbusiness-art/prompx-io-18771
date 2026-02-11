@@ -192,7 +192,7 @@ export default function Pricing() {
 
   if (loading) {
     return (
-      <Layout user={user}>
+      <Layout user={user} showHeader={false}>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
@@ -204,7 +204,7 @@ export default function Pricing() {
   }
 
   return (
-    <Layout user={user}>
+    <Layout user={user} showHeader={false}>
       <div className="min-h-screen bg-background py-20 relative overflow-hidden smooth-page">
         {/* Large Background Text */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">

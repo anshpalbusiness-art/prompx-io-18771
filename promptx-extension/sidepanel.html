@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+
+<body style="margin:0; width:100%; height:100vh; overflow:hidden; position:relative; background-color:black;">
+
+    <!-- Starfield Background -->
+    <canvas class="promptx-starfield cosmic-bg"></canvas>
+
+    <!-- Cosmic Ambient Glow -->
+    <div style="position:fixed; top:0; left:0; right:0; bottom:0; z-index:0; pointer-events:none;
+      background: radial-gradient(ellipse at 30% 0%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 100%, rgba(99, 102, 241, 0.1) 0%, transparent 40%);"></div>
+
+    <!-- Content Wrapper -->
+    <div style="position:relative; z-index:1; height:100%; display:flex; flex-direction:column;">
+
+        <!-- Header -->
+        <div
+            style="display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.3);">
+            <img src="data:image/png;base64,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"
+                alt="PromptX"
+                style="width:30px; height:30px; border-radius:8px; object-fit:cover; box-shadow:0 0 15px rgba(79, 70, 229, 0.3);">
+            <div>
+                <div style="font-size:15px; font-weight:800; color:white; letter-spacing:-0.02em;">PromptX</div>
+                <div
+                    style="font-size:9px; color:rgba(255,255,255,0.35); letter-spacing:1.5px; text-transform:uppercase; font-weight:600;">
+                    AI Prompt Enhancer</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs"
+            style="padding:8px 12px; display:flex; gap:6px; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.15);">
+            <button class="tab-btn active" data-tab="enhance"
+                style="flex:1; padding:10px; border-radius:12px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.6); font-weight:600; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; justify-content:center; gap:6px;">
+                ✨ Enhance
+            </button>
+            <button class="tab-btn" data-tab="history"
+                style="flex:1; padding:10px; border-radius:12px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.6); font-weight:600; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; justify-content:center; gap:6px;">
+                📜 History
+            </button>
+            <button class="tab-btn" data-tab="settings"
+                style="flex:1; padding:10px; border-radius:12px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.6); font-weight:600; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; justify-content:center; gap:6px;">
+                ⚙️ Settings
+            </button>
+        </div>
+
+        <!-- Enhance Tab -->
+        <div class="tab-content active" id="tab-enhance"
+            style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:20px;">
+
+            <div class="glass-card" style="padding:4px; border-radius:16px;">
+                <textarea id="manual-prompt" placeholder="Paste or type a prompt to enhance..." rows="5"
+                    style="width:100%; background:transparent; border:none; color:white; padding:16px; resize:vertical; min-height:100px; font-family:inherit; outline:none; font-size:14px; line-height:1.6;"></textarea>
+                <div
+                    style="padding:8px; border-top:1px solid rgba(255,255,255,0.05); display:flex; justify-content:flex-end;">
+                    <button class="btn-cosmic-primary" id="manual-enhance-btn"
+                        style="padding:10px 24px; border-radius:12px; cursor:pointer; font-size:13px; display:flex; align-items:center; gap:8px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        </svg>
+                        Enhance Prompt
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading-section"
+                style="display:none; flex-direction:column; align-items:center; gap:16px; padding:40px;">
+                <div
+                    style="width:40px; height:40px; border:3px solid rgba(255,255,255,0.1); border-top-color:#4f46e5; border-radius:50%; animation:spin 1s linear infinite;">
+                </div>
+                <div class="shimmer-text" style="font-size:13px; font-weight:600;">Analyzing prompt structure...</div>
+                <style>
+                    @keyframes spin {
+                        to {
+                            transform: rotate(360deg);
+                        }
+                    }
+                </style>
+            </div>
+
+            <!-- Result -->
+            <div class="glass-panel" id="result-section"
+                style="display:none; border-radius:16px; overflow:hidden; animation:slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);">
+                <div
+                    style="padding:16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02);">
+                    <div
+                        style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.4); letter-spacing:1px; text-transform:uppercase;">
+                        Enhanced Result</div>
+                    <div id="result-category"
+                        style="padding:4px 12px; background:rgba(79, 70, 229, 0.15); border:1px solid rgba(79, 70, 229, 0.3); border-radius:20px; color:#a5b4fc; font-size:11px; font-weight:600;">
+                        ⚡ General</div>
+                </div>
+
+                <div id="result-text"
+                    style="padding:20px; font-size:14px; line-height:1.6; color:rgba(255,255,255,0.9); white-space:pre-wrap;">
+                </div>
+
+                <div style="padding:16px; border-top:1px solid rgba(255,255,255,0.08); display:flex; gap:12px;">
+                    <button class="btn-cosmic-primary" id="result-use"
+                        style="flex:1; padding:12px; border-radius:10px; cursor:pointer; font-size:13px; display:flex; justify-content:center; gap:8px;">
+                        ⚡ Use in Chat
+                    </button>
+                    <button class="btn-cosmic-secondary" id="result-copy"
+                        style="flex:1; padding:12px; border-radius:10px; cursor:pointer; font-size:13px; display:flex; justify-content:center; gap:8px;">
+                        📋 Copy
+                    </button>
+                </div>
+
+                <div id="result-tips"
+                    style="display:none; padding:16px; background:rgba(255,255,255,0.02); border-top:1px solid rgba(255,255,255,0.05);">
+                    <div
+                        style="font-size:11px; font-weight:700; color:#a5b4fc; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                        PRO TIPS
+                    </div>
+                    <div id="tips-content"
+                        style="font-size:12px; color:rgba(255,255,255,0.6); line-height:1.5; padding-left:12px;"></div>
+                </div>
+            </div>
+
+            <style>
+                @keyframes slide-up {
+                    from {
+                        transform: translateY(20px);
+                        opacity: 0;
+                    }
+
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+            </style>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-content" id="tab-history" style="display:none; flex:1; overflow-y:auto; padding:20px;">
+            <div id="history-list" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="tab-settings"
+            style="display:none; flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px;">
+
+            <div class="glass-card"
+                style="padding:16px; border-radius:16px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:14px; font-weight:600; color:white;">Auto-Enhance</div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.5); margin-top:2px;">Enhance prompts as you
+                        type</div>
+                </div>
+                <label class="switch" style="position:relative; width:44px; height:24px;">
+                    <input type="checkbox" id="setting-auto" checked style="opacity:0; width:0; height:0;">
+                    <span class="slider"
+                        style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.1); transition:.4s; border-radius:24px;"></span>
+                    <style>
+                        .slider:before {
+                            position: absolute;
+                            content: "";
+                            height: 18px;
+                            width: 18px;
+                            left: 3px;
+                            bottom: 3px;
+                            background: white;
+                            transition: .4s;
+                            border-radius: 50%;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                        }
+
+                        input:checked+.slider {
+                            background: #4f46e5;
+                        }
+
+                        input:checked+.slider:before {
+                            transform: translateX(20px);
+                        }
+                    </style>
+                </label>
+            </div>
+
+            <div class="glass-card"
+                style="padding:16px; border-radius:16px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-size:14px; font-weight:600; color:white;">Show Widget</div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.5); margin-top:2px;">Floating button on AI
+                        sites</div>
+                </div>
+                <label class="switch" style="position:relative; width:44px; height:24px;">
+                    <input type="checkbox" id="setting-widget" checked style="opacity:0; width:0; height:0;">
+                    <span class="slider"
+                        style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.1); transition:.4s; border-radius:24px;"></span>
+                </label>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+                <div class="glass-card" style="padding:16px; border-radius:16px; text-align:center;">
+                    <div class="stat-value" id="total-enhanced" style="font-size:32px; font-weight:800; color:white;">0
+                    </div>
+                    <div
+                        style="font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; margin-top:4px;">
+                        Prompts Enhanced</div>
+                </div>
+                <div class="glass-card" style="padding:16px; border-radius:16px; text-align:center;">
+                    <div class="stat-value" id="top-category"
+                        style="font-size:18px; font-weight:700; color:white; height:32px; display:flex; align-items:center; justify-content:center;">
+                        —</div>
+                    <div
+                        style="font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; margin-top:4px;">
+                        Top Category</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="starfield.js"></script>
+    <script src="sidepanel.js"></script>
+</body>
+
+</html>
