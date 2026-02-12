@@ -251,13 +251,13 @@ class FloatingBubbleService : Service() {
         content.addView(header)
 
         // Paste from clipboard hint
-        val hint = TextView(this).apply {
+        val hintLabel = TextView(this).apply {
             text = "Paste your prompt or type one below"
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             setTextColor(Color.parseColor("#888"))
             setPadding(0, 0, 0, dpToPx(8))
         }
-        content.addView(hint)
+        content.addView(hintLabel)
 
         // Text input
         val input = EditText(this).apply {
@@ -268,7 +268,7 @@ class FloatingBubbleService : Service() {
             }
             setTextColor(Color.WHITE)
             setHintTextColor(Color.parseColor("#555"))
-            hint = "Type or paste prompt..."
+            setHint("Type or paste prompt...")
             setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             minLines = 3
