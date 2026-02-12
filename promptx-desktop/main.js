@@ -1,16 +1,85 @@
 const { app, BrowserWindow, globalShortcut, Tray, Menu, ipcMain, clipboard, screen, nativeImage, systemPreferences } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { enhance } = require('./enhancer');
 const { KeystrokeMonitor } = require('./keystroke-monitor');
+const { getAppContext } = require('./accessibility');
 
 let overlayWindow = null;
 let tray = null;
 let isVisible = false;
 let keystrokeMonitor = null;
-let previousApp = ''; // Track which app was active before overlay
+let previousApp = '';
+let currentAppContext = null;
+let lastEnhanceTriggerTime = 0;
+
+// Apps where we capture keystrokes (chatbot/AI tools)
+const CAPTURABLE_APPS = [
+    // AI Coding IDEs
+    'Cursor', 'Code', 'Windsurf', 'Zed', 'Trae',
+    // Browsers (ChatGPT, Claude, Gemini, Antigravity, etc.)
+    'Google Chrome', 'Safari', 'Firefox', 'Arc', 'Brave Browser',
+    'Microsoft Edge', 'Opera', 'Orion', 'Vivaldi', 'Zen Browser', 'Chromium',
+    // Desktop AI apps
+    'ChatGPT', 'Claude', 'Ollama',
+    // Writing & Notes
+    'Notes', 'TextEdit', 'Pages', 'Notion', 'Obsidian',
+    // Communication
+    'Slack', 'Discord', 'Telegram', 'WhatsApp',
+    // Terminals (for AI prompts in Warp, etc.)
+    'Warp', 'iTerm2'
+];
+
+function isCapturableApp(appName) {
+    return CAPTURABLE_APPS.some(name =>
+        appName.toLowerCase().includes(name.toLowerCase())
+    );
+}
 
 // ============================================
-// CLIPBOARD WATCHER — Auto-detect copied text
+// BINARY EXTRACTION — Fix for packaged DMG
+// Copies MacKeyServer from app.asar.unpacked to userData/bin/
+// ============================================
+
+function extractBinary() {
+    if (!app.isPackaged) {
+        console.log('⌨️  Dev mode — using default binary path');
+        return null; // Library will use its own default
+    }
+
+    const binDir = path.join(app.getPath('userData'), 'bin');
+    const targetPath = path.join(binDir, 'MacKeyServer');
+    const sourcePath = path.join(
+        process.resourcesPath,
+        'app.asar.unpacked',
+        'node_modules',
+        'node-global-key-listener',
+        'bin',
+        'MacKeyServer'
+    );
+
+    try {
+        if (!fs.existsSync(binDir)) {
+            fs.mkdirSync(binDir, { recursive: true });
+        }
+
+        if (fs.existsSync(sourcePath)) {
+            fs.copyFileSync(sourcePath, targetPath);
+            fs.chmodSync(targetPath, '755');
+            console.log(`✅ MacKeyServer extracted to: ${targetPath}`);
+            return targetPath;
+        } else {
+            console.error(`❌ Binary not found at: ${sourcePath}`);
+            return null;
+        }
+    } catch (e) {
+        console.error('❌ Failed to extract binary:', e.message);
+        return null;
+    }
+}
+
+// ============================================
+// CLIPBOARD WATCHER — Secondary detection
 // ============================================
 let lastClipboardText = '';
 let clipboardWatcherInterval = null;
@@ -29,10 +98,18 @@ function startClipboardWatcher() {
             return;
         }
 
+        // Don't trigger if keystroke monitor just triggered
+        const timeSinceLastEnhance = Date.now() - lastEnhanceTriggerTime;
+        if (timeSinceLastEnhance < 8000) {
+            lastClipboardText = currentText;
+            return;
+        }
+
         lastClipboardText = currentText;
-        console.log(`📋 Clipboard changed (${currentText.length} chars) — auto-enhancing...`);
-        captureFrontmostApp();
-        showOverlay(currentText, true);
+
+        const appContext = currentAppContext || getAppContext(previousApp);
+        console.log(`📋 Clipboard changed — enhancing (${currentText.length} chars) from ${appContext.label}`);
+        showOverlay(currentText, true, 'clipboard', appContext);
     }, 800);
 }
 
@@ -44,36 +121,61 @@ function stopClipboardWatcher() {
 }
 
 // ============================================
-// KEYSTROKE MONITOR — Auto-detect typing
+// KEYSTROKE MONITOR — Primary automatic detection
 // ============================================
 
 function startKeystrokeMonitor() {
     // Check accessibility permission
     const isTrusted = systemPreferences.isTrustedAccessibilityClient(false);
     if (!isTrusted) {
-        console.log('⚠️  Accessibility permission needed for keystroke detection');
-        console.log('   Opening System Settings...');
-        systemPreferences.isTrustedAccessibilityClient(true); // Opens System Settings
-        console.log('   ✅ Grant permission, then restart PromptX');
+        console.log('');
+        console.log('⚠️  ACCESSIBILITY PERMISSION REQUIRED');
+        console.log('   Go to: System Settings → Privacy & Security → Accessibility');
+        console.log('   Enable PromptX, then restart the app');
+        console.log('');
+        systemPreferences.isTrustedAccessibilityClient(true); // Prompt the user
     }
 
+    // Extract binary from asar for packaged app
+    const binaryPath = extractBinary();
+
     keystrokeMonitor = new KeystrokeMonitor({
-        pauseMs: 3000,    // 3 seconds after typing stops
-        minLength: 12     // At least 12 chars
+        pauseMs: 3000,
+        minLength: 10,
+        binaryPath: binaryPath
     });
 
     keystrokeMonitor.on('prompt-ready', ({ text }) => {
-        console.log(`✨ Prompt ready: "${text.substring(0, 60)}..."`);
-        captureFrontmostApp();
-        showOverlay(text, true);
+        const appContext = currentAppContext || getAppContext(previousApp);
+
+        console.log(`\n✨ PROMPT DETECTED`);
+        console.log(`   App: ${appContext.label} (${previousApp})`);
+        console.log(`   Text (${text.length} chars): "${text.substring(0, 100)}"`);
+
+        lastEnhanceTriggerTime = Date.now();
+        showOverlay(text, true, 'keystroke', appContext);
         keystrokeMonitor.clearBuffer();
     });
 
     keystrokeMonitor.on('permission-needed', () => {
-        console.log('🔐 Grant Accessibility permission in System Settings');
+        console.log('');
+        console.log('⚠️  ACCESSIBILITY PERMISSION NEEDED');
+        console.log('   PromptX needs this to detect typing');
+        console.log('   System Settings → Privacy & Security → Accessibility → Enable PromptX');
+        console.log('');
     });
 
-    keystrokeMonitor.start();
+    keystrokeMonitor.on('error', ({ code }) => {
+        console.log(`❌ Keystroke monitor error (code: ${code})`);
+        console.log('   Falling back to clipboard watcher only');
+    });
+
+    const started = keystrokeMonitor.start();
+    if (started) {
+        console.log('⌨️  Keystroke monitor started — captures typing from chatbot apps');
+    } else {
+        console.log('⚠️  Keystroke monitor failed to start — using clipboard watcher only');
+    }
 }
 
 // ============================================
@@ -103,49 +205,52 @@ function createOverlayWindow() {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
-            sandbox: false  // Need sandbox off for global key listener
+            sandbox: false
         }
     });
 
-    // Highest window level — float above ALL apps
     overlayWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-
     overlayWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-
-    // NO blur handler — overlay stays until explicitly closed
-
-    overlayWindow.on('closed', () => {
-        overlayWindow = null;
-    });
+    overlayWindow.on('closed', () => { overlayWindow = null; });
 }
 
 // ============================================
-// HELPER — continuously track last non-PromptX frontmost app
+// APP POLLER — Track frontmost app + filter keystrokes
 // ============================================
 let appPollerInterval = null;
 
 function startAppPoller() {
     const { exec } = require('child_process');
+
     const pollFn = () => {
-        exec(`osascript -e 'tell application "System Events" to get bundle identifier of first application process whose frontmost is true'`, (err, stdout, stderr) => {
-            if (err) {
-                console.log(`⚠️ App poller error: ${err.message}`);
-                return;
-            }
-            if (stderr) console.log(`⚠️ App poller stderr: ${stderr.trim()}`);
-            const bid = (stdout || '').trim();
-            if (bid && bid !== 'com.github.Electron' && !bid.includes('com.promptx')) {
-                if (bid !== previousApp) {
-                    previousApp = bid;
-                    console.log(`📍 Active app: ${previousApp}`);
+        exec(`osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'`, (err, stdout) => {
+            if (err) return;
+            const appName = (stdout || '').trim();
+            if (!appName || appName === 'PromptX' || appName === 'Electron') return;
+
+            if (appName !== previousApp) {
+                previousApp = appName;
+                currentAppContext = getAppContext(appName);
+
+                // CRITICAL: Clear buffer on app switch to prevent contamination
+                if (keystrokeMonitor) {
+                    keystrokeMonitor.clearBuffer();
                 }
+
+                // Only capture keystrokes from chatbot/AI tool apps
+                const capturable = isCapturableApp(appName);
+                if (keystrokeMonitor) {
+                    keystrokeMonitor.setEnabled(capturable);
+                }
+
+                console.log(`📍 App: ${appName} → ${currentAppContext.label} [keystrokes: ${capturable ? 'ON' : 'OFF'}]`);
             }
         });
     };
-    // Poll immediately, then every 2s
+
     pollFn();
-    appPollerInterval = setInterval(pollFn, 2000);
+    appPollerInterval = setInterval(pollFn, 1500); // Poll every 1.5s
 }
 
 function stopAppPoller() {
@@ -155,31 +260,27 @@ function stopAppPoller() {
     }
 }
 
-// Legacy single-shot (kept for manual triggers)
 function captureFrontmostApp() {
     try {
         const { execSync } = require('child_process');
-        const bundleId = execSync(
-            `osascript -e 'tell application "System Events" to get bundle identifier of first application process whose frontmost is true'`,
+        const appName = execSync(
+            `osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'`,
             { timeout: 3000, encoding: 'utf8' }
         ).trim();
-        if (bundleId && bundleId !== 'com.github.Electron' && !bundleId.includes('com.promptx')) {
-            previousApp = bundleId;
-            console.log(`📍 Captured app: ${previousApp}`);
+        if (appName && appName !== 'PromptX' && appName !== 'Electron') {
+            previousApp = appName;
+            currentAppContext = getAppContext(appName);
         }
-    } catch (e) {
-        console.log('⚠️ captureFrontmostApp error:', e.message);
-    }
+    } catch (e) { /* silent */ }
 }
 
 // ============================================
 // SHOW / HIDE OVERLAY
 // ============================================
 
-function showOverlay(textToEnhance = null, autoEnhance = false) {
+function showOverlay(textToEnhance = null, autoEnhance = false, source = 'manual', appContext = null) {
     if (!overlayWindow) createOverlayWindow();
 
-    // Position on current screen
     const cursorPoint = screen.getCursorScreenPoint();
     const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
     const { x: dx, y: dy, width: dw, height: dh } = currentDisplay.workArea;
@@ -189,16 +290,20 @@ function showOverlay(textToEnhance = null, autoEnhance = false) {
     const cy = Math.round(dy + dh * 0.18);
     overlayWindow.setPosition(cx, cy);
 
-    const clipboardText = textToEnhance || clipboard.readText().trim();
+    let clipboardText = textToEnhance || clipboard.readText().trim();
+    const ctx = appContext || currentAppContext || getAppContext(previousApp);
 
     overlayWindow.setAlwaysOnTop(true, 'screen-saver', 1);
     overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-
     overlayWindow.show();
     overlayWindow.moveTop();
     if (!autoEnhance) overlayWindow.focus();
 
-    overlayWindow.webContents.send('overlay:shown', { clipboardText, autoEnhance });
+    overlayWindow.webContents.send('overlay:shown', {
+        clipboardText,
+        autoEnhance,
+        appContext: ctx
+    });
     isVisible = true;
 }
 
@@ -215,7 +320,7 @@ function toggleOverlay() {
         hideOverlay();
     } else {
         captureFrontmostApp();
-        showOverlay();
+        showOverlay(null, false, 'manual', currentAppContext);
     }
 }
 
@@ -257,52 +362,16 @@ function createTray() {
     const contextMenu = Menu.buildFromTemplate([
         { label: '✨ PromptX', enabled: false },
         { type: 'separator' },
-        {
-            label: 'Toggle Overlay (⌥P)',
-            click: toggleOverlay
-        },
-        { type: 'separator' },
-        {
-            label: '⌨️ Auto-Detect Typing',
-            type: 'checkbox',
-            checked: true,
-            click: (menuItem) => {
-                if (keystrokeMonitor) keystrokeMonitor.setEnabled(menuItem.checked);
-                console.log(`⌨️ Keystroke monitor: ${menuItem.checked ? 'ON' : 'OFF'}`);
-            }
-        },
-        {
-            label: '📋 Auto-Detect Clipboard',
-            type: 'checkbox',
-            checked: true,
-            click: (menuItem) => {
-                if (menuItem.checked) startClipboardWatcher();
-                else stopClipboardWatcher();
-            }
-        },
-        { type: 'separator' },
-        {
-            label: 'Clear Typing Buffer',
-            click: () => {
-                if (keystrokeMonitor) keystrokeMonitor.clearBuffer();
-                console.log('🗑️ Typing buffer cleared');
-            }
-        },
+        { label: 'Toggle Overlay (⌥P)', click: toggleOverlay },
         { type: 'separator' },
         {
             label: 'Launch at Login',
             type: 'checkbox',
             checked: app.getLoginItemSettings().openAtLogin,
-            click: (menuItem) => {
-                app.setLoginItemSettings({ openAtLogin: menuItem.checked });
-            }
+            click: (menuItem) => { app.setLoginItemSettings({ openAtLogin: menuItem.checked }); }
         },
         { type: 'separator' },
-        {
-            label: 'Quit PromptX',
-            accelerator: 'CmdOrCtrl+Q',
-            click: () => app.quit()
-        }
+        { label: 'Quit PromptX', accelerator: 'CmdOrCtrl+Q', click: () => app.quit() }
     ]);
 
     tray.setContextMenu(contextMenu);
@@ -313,9 +382,10 @@ function createTray() {
 // IPC HANDLERS
 // ============================================
 
-ipcMain.handle('enhance', async (_event, prompt) => {
+ipcMain.handle('enhance', async (_event, prompt, appContext) => {
     try {
-        const result = await enhance(prompt);
+        const ctx = appContext || currentAppContext || getAppContext(previousApp);
+        const result = await enhance(prompt, ctx);
         if (result && result.enhanced && keystrokeMonitor) {
             keystrokeMonitor.markEnhanced(result.enhanced);
             keystrokeMonitor.markEnhanced(prompt);
@@ -329,7 +399,6 @@ ipcMain.handle('enhance', async (_event, prompt) => {
 ipcMain.handle('toggle-auto-enhance', (_event, enabled) => {
     if (keystrokeMonitor) {
         keystrokeMonitor.setEnabled(enabled);
-        console.log(`️ Auto-enhance toggled: ${enabled ? 'ON' : 'OFF'}`);
     }
     return true;
 });
@@ -346,51 +415,32 @@ ipcMain.handle('paste-to-app', async (_event, text) => {
     const { exec } = require('child_process');
 
     try {
-        // Step 1: Copy to clipboard
         isOurClipboardWrite = true;
         clipboard.writeText(text);
-        console.log('📋 Step 1: Text copied to clipboard');
+        lastClipboardText = text;
 
-        // Step 2: Hide overlay
         hideOverlay();
-        console.log('📋 Step 2: Overlay hidden');
 
-        // Step 3: Activate previous app
         const target = previousApp || '';
-        console.log(`📋 Step 3: Target app = "${target}"`);
-
         if (target) {
-            // Activate using open -b
             await new Promise((resolve) => {
-                exec(`open -b "${target}"`, (err) => {
-                    if (err) console.log(`📋 open -b error: ${err.message}`);
-                    else console.log('📋 Step 3a: App activated via open -b');
+                exec(`osascript -e 'tell application "${target}" to activate'`, (err) => {
+                    if (err) console.log(`Activate error: ${err.message}`);
                     resolve();
                 });
             });
 
-            // Wait for app to fully come to front
-            await new Promise(r => setTimeout(r, 800));
-            console.log('📋 Step 4: Waited 800ms for focus');
+            await new Promise(r => setTimeout(r, 600));
 
-            // Simulate Cmd+V
             await new Promise((resolve) => {
-                exec(`osascript -e 'tell application "System Events" to keystroke "v" using {command down}'`, (err, stdout, stderr) => {
-                    if (err) console.log(`📋 Cmd+V error: ${err.message}`);
-                    if (stderr) console.log(`📋 Cmd+V stderr: ${stderr}`);
-                    console.log('📋 Step 5: Cmd+V sent');
+                exec(`osascript -e 'tell application "System Events" to keystroke "v" using {command down}'`, (err) => {
+                    if (err) console.log(`Cmd+V error: ${err.message}`);
+                    console.log('✅ Pasted to', target);
                     resolve();
                 });
-            });
-        } else {
-            console.log('📋 No target app — waiting and pasting blind');
-            await new Promise(r => setTimeout(r, 1000));
-            await new Promise((resolve) => {
-                exec(`osascript -e 'tell application "System Events" to keystroke "v" using {command down}'`, () => resolve());
             });
         }
 
-        console.log('✅ Paste flow complete');
         return { success: true };
     } catch (err) {
         console.error('❌ Paste error:', err.message);
@@ -398,9 +448,7 @@ ipcMain.handle('paste-to-app', async (_event, text) => {
     }
 });
 
-ipcMain.handle('clipboard:read', () => {
-    return clipboard.readText().trim();
-});
+ipcMain.handle('clipboard:read', () => clipboard.readText().trim());
 
 ipcMain.handle('clipboard:write', (_event, text) => {
     isOurClipboardWrite = true;
@@ -409,15 +457,23 @@ ipcMain.handle('clipboard:write', (_event, text) => {
     return true;
 });
 
-ipcMain.on('overlay:hide', () => {
-    hideOverlay();
-});
+ipcMain.on('overlay:hide', () => hideOverlay());
 
 // ============================================
 // APP LIFECYCLE
 // ============================================
 
 app.whenReady().then(() => {
+    console.log('');
+    console.log('╔══════════════════════════════════════╗');
+    console.log('║     ✨ PromptX Desktop Starting      ║');
+    console.log('╚══════════════════════════════════════╝');
+    console.log('');
+    console.log(`📦 Packaged: ${app.isPackaged}`);
+    console.log(`📂 Resources: ${process.resourcesPath}`);
+    console.log(`📂 UserData: ${app.getPath('userData')}`);
+    console.log('');
+
     createOverlayWindow();
     createTray();
     startClipboardWatcher();
@@ -426,14 +482,13 @@ app.whenReady().then(() => {
 
     const shortcutRegistered = globalShortcut.register('Alt+P', toggleOverlay);
     if (!shortcutRegistered) {
-        console.error('❌ Failed to register Alt+P shortcut');
         globalShortcut.register('Alt+Shift+P', toggleOverlay);
     }
 
     console.log('');
-    console.log('✨ PromptX Desktop ready!');
-    console.log('   ⌨️  Auto-detect typing — type a prompt anywhere, pause 3s → auto-enhances');
-    console.log('   📋 Auto-detect clipboard — copy text → auto-enhances');
+    console.log('✅ PromptX ready!');
+    console.log('   ⌨️  Type in Cursor/Windsurf chatbot → wait 3s → auto-enhances');
+    console.log('   📋 Copy text (Cmd+C) → auto-enhances');
     console.log('   ⌥P to toggle overlay manually');
     console.log('');
 });

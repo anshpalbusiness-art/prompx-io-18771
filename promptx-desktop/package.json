@@ -35,6 +35,9 @@
             ".env",
             "renderer/**/*",
             "assets/**/*"
+        ],
+        "asarUnpack": [
+            "node_modules/node-global-key-listener/bin/**"
         ]
     },
     "devDependencies": {

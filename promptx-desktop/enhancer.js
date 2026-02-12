@@ -124,18 +124,26 @@ function detectCategory(prompt) {
 // AI-POWERED ENHANCEMENT (Direct xAI API call)
 // ============================================
 
-const SYSTEM_PROMPT = `You are PromptX — the world's most advanced prompt enhancement engine. Your job is to take a user's rough, messy, or vague prompt and transform it into an expert-level, highly detailed, perfectly structured prompt that will get dramatically better results from any AI.
+function buildSystemPrompt(appContext) {
+    const contextLine = appContext
+        ? `\nCONTEXT: The user is writing a ${appContext.description} in ${appContext.label}. Tailor your enhancement to this context — keep the enhanced prompt relevant to the platform and use case.`
+        : '';
 
-RULES:
+    return `You are PromptX — the world's most advanced prompt enhancement engine. Your ONLY job is to take the user's EXACT prompt text and transform it into an expert-level, detailed version of THAT SAME prompt.
+
+CRITICAL RULES:
+- ENHANCE THE USER'S ACTUAL PROMPT — do NOT change the topic or intent
+- If the user says "make me a to do list app", the output MUST be about a to-do list app
 - Fix ALL spelling, grammar, and capitalization errors
 - Understand the TRUE intent behind the user's words
 - COMPLETELY REWRITE the prompt from scratch — don't just append to it
 - Add specific details, constraints, format requirements, and context
 - Write like a senior expert would — specific, clear, purposeful
-- The enhanced prompt should feel like a human expert wrote it
 - Quality over quantity. Concise but comprehensive
 - Make it 3-10x more detailed and specific than the original
 - NEVER add pleasantries or fluff. Be direct and actionable
+- NEVER mention PromptX, prompt enhancement, or meta-commentary about the prompt itself
+- The output should READ as if an expert user wrote it directly${contextLine}
 
 EXAMPLES:
 User: "make me a to do list app"
@@ -150,11 +158,14 @@ RESPOND IN THIS EXACT JSON FORMAT:
   "tips": ["Specific improvement insight 1", "Specific improvement insight 2"],
   "improvement": "One-line summary of what was improved"
 }`;
+}
 
-async function enhanceViaAPI(prompt, category) {
+async function enhanceViaAPI(prompt, category, appContext) {
     if (!XAI_API_KEY) {
         throw new Error('XAI_API_KEY not set in .env');
     }
+
+    const systemPrompt = buildSystemPrompt(appContext);
 
     const MAX_RETRIES = 3;
 
@@ -174,8 +185,8 @@ async function enhanceViaAPI(prompt, category) {
                 body: JSON.stringify({
                     model: 'grok-3-mini-fast',
                     messages: [
-                        { role: 'system', content: SYSTEM_PROMPT },
-                        { role: 'user', content: `Category: ${category}\nPrompt to enhance: "${prompt}"` }
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: `Category: ${category}\nApp: ${appContext ? appContext.label : 'Unknown'}\nPrompt to enhance: "${prompt}"` }
                     ],
                     temperature: 0.7,
                     max_tokens: 1500
@@ -251,18 +262,25 @@ function enhanceLocally(prompt, category) {
 // MAIN ENHANCE FUNCTION
 // ============================================
 
-async function enhance(prompt) {
+async function enhance(prompt, appContext = null) {
+    console.log(`\n🔍 ====== ENHANCE CALLED ======`);
+    console.log(`   Input (${prompt.length} chars): "${prompt.substring(0, 120)}"`);
+    console.log(`   App: ${appContext ? appContext.label : 'Unknown'}`);
+
     const category = detectCategory(prompt);
+    console.log(`   Category: ${category}`);
+    console.log(`   API Key present: ${!!XAI_API_KEY}`);
 
     // Try AI enhancement first (direct API call)
     try {
-        const result = await enhanceViaAPI(prompt, category);
-        console.log('✅ AI enhancement successful!');
-        return { ...result, category, source: 'api' };
+        const result = await enhanceViaAPI(prompt, category, appContext);
+        console.log(`✅ AI enhancement successful!`);
+        console.log(`   Output (${result.enhanced.length} chars): "${result.enhanced.substring(0, 120)}"`);
+        return { ...result, category, source: 'api', appContext };
     } catch (err) {
         console.log('⚠️ AI API unavailable, using local enhancement:', err.message);
         const local = enhanceLocally(prompt, category);
-        return { ...local, category, source: 'local' };
+        return { ...local, category, source: 'local', appContext };
     }
 }
 

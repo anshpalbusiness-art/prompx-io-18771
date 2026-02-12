@@ -1,7 +1,6 @@
-// PromptX Desktop — Deep Navy Glass Logic
-
 let currentEnhancement = null;
 let originalPrompt = '';
+let currentAppContext = null;
 
 // ============================================
 // DOM ELEMENTS
@@ -70,14 +69,15 @@ function resetHeader(text, color) {
 // LOGIC
 // ============================================
 
-async function processPrompt(prompt, source = 'manual') {
+async function processPrompt(prompt, source = 'manual', appContext = null) {
     if (!prompt || prompt.length < 5) return;
 
     originalPrompt = prompt;
+    currentAppContext = appContext;
     showState('loading');
 
     try {
-        const result = await window.promptx.enhance(prompt);
+        const result = await window.promptx.enhance(prompt, appContext);
 
         if (result.error) {
             elements.resultText.textContent = `❌ ${result.error}`;
@@ -94,7 +94,8 @@ async function processPrompt(prompt, source = 'manual') {
         const origLen = originalPrompt.length;
         const newLen = result.enhanced.length;
         const pct = Math.round(((newLen - origLen) / origLen) * 100);
-        elements.charCount.textContent = `${origLen} -> ${newLen} chars (↑${Math.abs(pct)}%)`;
+        const appLabel = appContext ? ` • ${appContext.label}` : '';
+        elements.charCount.textContent = `${origLen} → ${newLen} chars (↑${Math.abs(pct)}%)${appLabel}`;
 
         // Tips
         if (result.tips && result.tips.length > 0) {
@@ -182,14 +183,10 @@ function showToast(msg) {
 // ============================================
 
 window.promptx.onShown((data) => {
-    const { clipboardText, autoEnhance } = data || {};
-
-    // Reset toggle UI if needed (optimization: sync with main process)
-    // elements.autoEnhanceToggle.checked = true; // Assume true on show for now
+    const { clipboardText, autoEnhance, appContext } = data || {};
 
     if (clipboardText && clipboardText.length >= 5) {
-        // If triggered by auto-enhance or manual paste, process it
-        processPrompt(clipboardText, autoEnhance ? 'auto' : 'manual');
+        processPrompt(clipboardText, autoEnhance ? 'auto' : 'manual', appContext || null);
     } else {
         showState('idle');
     }

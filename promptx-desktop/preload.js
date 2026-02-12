@@ -1,8 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('promptx', {
-    // Enhancement
-    enhance: (prompt) => ipcRenderer.invoke('enhance', prompt),
+    // Enhancement — now accepts appContext
+    enhance: (prompt, appContext) => ipcRenderer.invoke('enhance', prompt, appContext),
 
     // Clipboard
     readClipboard: () => ipcRenderer.invoke('clipboard:read'),
