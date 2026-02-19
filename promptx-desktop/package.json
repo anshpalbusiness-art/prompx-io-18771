@@ -32,6 +32,7 @@
             "enhancer.js",
             "keystroke-monitor.js",
             "accessibility.js",
+            "cli-window.js",
             ".env",
             "renderer/**/*",
             "assets/**/*"

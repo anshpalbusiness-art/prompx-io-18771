@@ -943,3 +943,28 @@ All colors MUST be HSL.
     background: hsl(0 0% 100% / 0.2);
   }
 }
+
+/* ─── Native App Styles ───────────────────────────────────────────────── */
+
+/* Electron: macOS hidden inset titlebar — push content down */
+.electron-mac {
+  --titlebar-height: 38px;
+}
+
+.electron-mac #root {
+  padding-top: var(--titlebar-height);
+}
+
+/* Capacitor: keyboard is open — shrink the viewport */
+body.keyboard-open {
+  height: calc(100vh - 280px);
+  /* approximate keyboard height */
+  overflow: hidden;
+}
+
+/* Native app: prevent overscroll bounce */
+html.native-app,
+html.native-app body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}

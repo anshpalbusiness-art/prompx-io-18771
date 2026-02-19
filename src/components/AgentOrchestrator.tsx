@@ -235,11 +235,11 @@ export const AgentOrchestrator = ({ userId, agents = [] }: AgentOrchestratorProp
         const workflowStartTime = Date.now();
 
         // Reset all nodes to pending and store lastInput
-        let currentOrch = {
+        let currentOrch: Orchestration = {
             ...selectedOrch,
-            status: 'running' as const,
+            status: 'running',
             lastInput: initialInput,
-            nodes: selectedOrch.nodes.map(n => ({ ...n, status: 'pending' as const, output: undefined, error: undefined, duration: undefined })),
+            nodes: selectedOrch.nodes.map(n => ({ ...n, status: 'pending' as OrchestrationNode['status'], output: undefined, error: undefined, duration: undefined })),
         };
         setSelectedOrch(currentOrch);
         updateOrchestrations(orchestrations.map(o => o.id === currentOrch.id ? currentOrch : o));
@@ -258,7 +258,7 @@ export const AgentOrchestrator = ({ userId, agents = [] }: AgentOrchestratorProp
             currentOrch = {
                 ...currentOrch,
                 nodes: currentOrch.nodes.map((n, idx) =>
-                    idx === i ? { ...n, status: 'running' as const } : n
+                    idx === i ? { ...n, status: 'running' as OrchestrationNode['status'] } : n
                 ),
             };
             setSelectedOrch(currentOrch);
@@ -276,9 +276,9 @@ export const AgentOrchestrator = ({ userId, agents = [] }: AgentOrchestratorProp
                 // Update to failed
                 currentOrch = {
                     ...currentOrch,
-                    status: 'failed' as const,
+                    status: 'failed' as Orchestration['status'],
                     nodes: currentOrch.nodes.map((n, idx) =>
-                        idx === i ? { ...n, status: 'failed' as const, error: result.error, duration: stepDuration } : n
+                        idx === i ? { ...n, status: 'failed' as OrchestrationNode['status'], error: result.error, duration: stepDuration } : n
                     ),
                 };
                 setSelectedOrch(currentOrch);
@@ -297,7 +297,7 @@ export const AgentOrchestrator = ({ userId, agents = [] }: AgentOrchestratorProp
             currentOrch = {
                 ...currentOrch,
                 nodes: currentOrch.nodes.map((n, idx) =>
-                    idx === i ? { ...n, status: 'completed' as const, output: result.response, duration: stepDuration } : n
+                    idx === i ? { ...n, status: 'completed' as OrchestrationNode['status'], output: result.response, duration: stepDuration } : n
                 ),
             };
             setSelectedOrch(currentOrch);
@@ -313,7 +313,7 @@ export const AgentOrchestrator = ({ userId, agents = [] }: AgentOrchestratorProp
         if (success) {
             currentOrch = {
                 ...currentOrch,
-                status: 'completed' as const,
+                status: 'completed' as Orchestration['status'],
                 lastRun: new Date().toISOString(),
                 totalDuration,
                 finalOutput,

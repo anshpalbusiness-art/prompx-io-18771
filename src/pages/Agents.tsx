@@ -47,53 +47,37 @@ const Agents = () => {
   return (
     <Layout user={user} showHeader={false}>
       <div className="w-full min-h-screen bg-background">
-        <div className="container-responsive mx-auto max-w-7xl py-8 sm:py-12 md:py-16 lg:py-20">
-          {/* Hero Header */}
-          <div className="mb-10 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="relative p-4 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/10 shadow-lg">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent opacity-50" />
-                <Sparkles className="relative h-10 w-10 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight leading-none">
-                  AI Agent Hub
-                </h1>
-                <p className="text-base sm:text-lg text-muted-foreground mt-2 font-medium">
-                  Build, orchestrate, and monetize intelligent agents
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background pointer-events-none" />
 
-          {/* Pro Upgrade Banner for Free Users */}
-          {!planAccess.isLoading && planAccess.planType === 'free' && (
-            <div className="relative mb-8 overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-muted/30 via-background/50 to-muted/20 backdrop-blur-sm">
-              <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:20px_20px]" />
-              <div className="relative p-6 sm:p-8">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
-                      <Lock className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <h3 className="text-lg font-semibold tracking-tight">Unlock Full Agent Power</h3>
-                      <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-                        Free plan has limited features. Upgrade to Pro for unlimited agents, orchestration, advanced tools, and Agent Store access.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => navigate('/pricing')}
-                    className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 shrink-0"
-                  >
-                    <Crown className="h-4 w-4" />
-                    Upgrade to Pro
-                  </Button>
+        <div className="container-responsive mx-auto max-w-7xl py-12 sm:py-16 md:py-20 lg:py-24 relative z-10">
+          {/* Compact Header for Dashboard Feel */}
+          <div className="mb-6 flex items-center justify-between px-2">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-3">
+                <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+                  <Sparkles className="h-4 w-4 text-primary" />
                 </div>
-              </div>
+                AI Agent Hub
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1 ml-11">
+                Manage your intelligent agents and CLI tools.
+              </p>
             </div>
-          )}
+
+            {/* Compact Pro Banner */}
+            {!planAccess.isLoading && planAccess.planType === 'free' && (
+              <Button
+                onClick={() => navigate('/pricing')}
+                variant="outline"
+                size="sm"
+                className="gap-2 h-8 text-xs border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              >
+                <Crown className="h-3.5 w-3.5" />
+                Upgrade to Pro
+              </Button>
+            )}
+          </div>
 
           {/* Main Agent Hub */}
           <div className="w-full">

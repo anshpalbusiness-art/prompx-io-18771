@@ -8,6 +8,8 @@ import { PersonalizationHub } from "@/components/PersonalizationHub";
 import Layout from "@/components/Layout";
 import { User } from "@supabase/supabase-js";
 
+import { WorkflowAnalytics } from "@/components/workflow/WorkflowAnalytics";
+
 const Analytics = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -54,7 +56,12 @@ const Analytics = () => {
               Track your prompt performance with AI-powered insights and predictive analytics
             </p>
           </div>
-          
+
+          {/* Workflow Analytics */}
+          <div className="mb-8 sm:mb-10 md:mb-12 lg:mb-14">
+            <WorkflowAnalytics />
+          </div>
+
           {/* Intelligent Insights Section */}
           <div className="mb-8 sm:mb-10 md:mb-12 lg:mb-14">
             <IntelligentInsights />

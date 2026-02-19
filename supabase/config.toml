@@ -1,4 +1,4 @@
-project_id = "eijjnmararuivabggggv"
+project_id = "wnrwtwmkwmrodszppnkq"
 
 [api]
 enabled = true
@@ -100,5 +100,3 @@ verify_jwt = false
 [functions.web-research]
 verify_jwt = false
 
-[functions.whop-webhook]
-verify_jwt = false

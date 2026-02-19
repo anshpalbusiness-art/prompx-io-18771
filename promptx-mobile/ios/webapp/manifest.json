@@ -1,0 +1,50 @@
+{
+    "name": "PromptX - AI Prompt Engineering Platform",
+    "short_name": "PromptX",
+    "description": "Create, optimize, and manage AI prompts with enterprise-grade tools",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#0a0e27",
+    "orientation": "any",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "productivity",
+        "utilities",
+        "developer"
+    ],
+    "lang": "en",
+    "dir": "ltr",
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Dashboard",
+            "url": "/dashboard",
+            "description": "Open AI Chatbot Dashboard"
+        },
+        {
+            "name": "Agents",
+            "url": "/agents",
+            "description": "Manage AI Agents"
+        },
+        {
+            "name": "Marketplace",
+            "url": "/marketplace",
+            "description": "Browse Prompt Marketplace"
+        }
+    ]
+}

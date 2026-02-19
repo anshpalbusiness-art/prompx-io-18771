@@ -6,6 +6,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OverlayProvider } from "@/contexts/OverlayContext";
+import { CLIGeneratorProvider } from "@/contexts/CLIGeneratorContext";
+import { WorkflowProvider } from "@/contexts/WorkflowContext";
 
 // Component to prevent scroll restoration on navigation
 const ScrollRestoration = () => {
@@ -49,7 +52,8 @@ const ApiKeys = lazy(() => import("./pages/ApiKeys"));
 const Usage = lazy(() => import("./pages/Usage"));
 const CompliancePage = lazy(() => import("./pages/CompliancePage"));
 const Pricing = lazy(() => import("./pages/Pricing"));
-const Payment = lazy(() => import("./pages/Payment"));
+
+const Schedules = lazy(() => import("./pages/Schedules"));
 
 // Loading component for Suspense fallback
 const PageLoader = () => (
@@ -81,40 +85,47 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <ScrollRestoration />
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/visual-builder" element={<VisualBuilder />} />
-                <Route path="/ai-copilot" element={<AICopilotPage />} />
-                <Route path="/templates" element={<Templates />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/workflow" element={<Workflow />} />
-                <Route path="/legal-packs" element={<LegalPacks />} />
-                <Route path="/api-keys" element={<ApiKeys />} />
-                <Route path="/usage" element={<Usage />} />
-                <Route path="/compliance-dashboard" element={<CompliancePage />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/benchmark" element={<Benchmark />} />
-                <Route path="/agents" element={<Agents />} />
-                <Route path="/optimization-lab" element={<OptimizationLab />} />
-                <Route path="/integrations" element={<Integrations />} />
-                <Route path="/team" element={<Team />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/compliance" element={<Compliance />} />
-                <Route path="/community" element={<Community />} />
-                <Route path="/enterprise" element={<Enterprise />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/payment" element={<Payment />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/admin" element={<Admin />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+            <OverlayProvider>
+              <CLIGeneratorProvider>
+                <WorkflowProvider>
+                  <ScrollRestoration />
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/visual-builder" element={<VisualBuilder />} />
+                      <Route path="/ai-copilot" element={<AICopilotPage />} />
+                      <Route path="/templates" element={<Templates />} />
+                      <Route path="/history" element={<History />} />
+                      <Route path="/workflow" element={<Workflow />} />
+                      <Route path="/legal-packs" element={<LegalPacks />} />
+                      <Route path="/api-keys" element={<ApiKeys />} />
+                      <Route path="/usage" element={<Usage />} />
+                      <Route path="/compliance-dashboard" element={<CompliancePage />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/benchmark" element={<Benchmark />} />
+                      <Route path="/agents" element={<Agents />} />
+                      <Route path="/optimization-lab" element={<OptimizationLab />} />
+                      <Route path="/integrations" element={<Integrations />} />
+                      <Route path="/team" element={<Team />} />
+                      <Route path="/marketplace" element={<Marketplace />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/compliance" element={<Compliance />} />
+                      <Route path="/community" element={<Community />} />
+                      <Route path="/enterprise" element={<Enterprise />} />
+                      <Route path="/pricing" element={<Pricing />} />
+
+                      <Route path="/schedules" element={<Schedules />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/admin" element={<Admin />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </WorkflowProvider>
+              </CLIGeneratorProvider>
+            </OverlayProvider>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

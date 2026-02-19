@@ -39,7 +39,6 @@ export const Layout = React.memo(({ children, user, showHeader = true }: LayoutP
             <main className="min-h-full">
               {children}
             </main>
-            <Footer />
           </div>
         </SidebarInset>
       </div>

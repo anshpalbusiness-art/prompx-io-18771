@@ -31,6 +31,7 @@ import {
   ChevronRight,
   PanelLeft,
   PanelLeftClose,
+  CalendarClock,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -85,6 +86,7 @@ const toolsItems = [
   { name: 'Visual Builder', path: '/visual-builder', icon: Layers },
   { name: 'AI Co-Pilot', path: '/ai-copilot', icon: Bot },
   { name: 'Templates', path: '/templates', icon: FileText },
+  { name: 'Schedules', path: '/schedules', icon: CalendarClock },
   { name: 'History', path: '/history', icon: History },
   { name: 'Workflow', path: '/workflow', icon: WorkflowIcon },
   { name: 'Legal Packs', path: '/legal-packs', icon: Scale },

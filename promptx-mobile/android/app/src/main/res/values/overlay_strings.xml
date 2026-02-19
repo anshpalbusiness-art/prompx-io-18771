@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">PromptX Overlay enhances your AI prompts in real-time. When enabled, it monitors text input in AI chat apps (ChatGPT, Claude, Gemini, Grok, etc.) and suggests improved prompts for better AI responses. Your prompts are only processed to provide enhancement suggestions and are not stored unless you enable Cloud Boost.</string>
+</resources>

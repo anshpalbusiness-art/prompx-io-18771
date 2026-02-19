@@ -176,14 +176,12 @@ export default function Pricing() {
       return;
     }
 
-    // Redirect to payment page with plan details
-    navigate('/payment', {
-      state: {
-        plan: plan.planType,
-        price: billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly,
-        billingCycle
-      }
+    // Payment integration temporarily disabled
+    toast({
+      title: "Coming Soon",
+      description: "Paid plans will be available soon!",
     });
+    return;
   };
 
   const getSavingsPercentage = () => {

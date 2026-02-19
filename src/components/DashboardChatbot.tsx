@@ -10,6 +10,7 @@ import { chatStorage, ChatMessage as StoredChatMessage } from "@/lib/chatStorage
 import { analyzeWebsite, generatePrompt, generateCode } from "@/utils/websiteAnalyzer";
 import { recentFilesStorage } from "@/lib/recentFilesStorage";
 import { useSessionMemory, useMemoryContext, useBehaviorTracking } from "@/hooks/useMemory";
+import { buildContextIntelligence } from "@/lib/contextIntelligence";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -280,6 +281,7 @@ export const DashboardChatbot = () => {
   // Incognito mode state
   const [isIncognito, setIsIncognito] = useState(false);
 
+
   // Memory system hooks
   const { addChatMessage, chatContext: memoryChatContext } = useSessionMemory();
   const { contextString: memoryContext, learnFromMessage } = useMemoryContext();
@@ -489,7 +491,7 @@ export const DashboardChatbot = () => {
     // Call xAI API via Supabase Edge Function
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const functionUrl = `http://localhost:3001/api/chat-completion`;
+      const functionUrl = `http://localhost:3002/api/chat-completion`;
 
 
       // Learn from user message (non-blocking)
@@ -501,12 +503,20 @@ export const DashboardChatbot = () => {
       // Track model usage
       trackModelUsed(selectedModel.id);
 
-      // Prepare messages in OpenAI format with system prompt including memory context
+      // Context Intelligence: build cross-chat awareness
+      const currentMsgs = messages.concat(userMessage).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      const contextIntel = buildContextIntelligence(currentChatId, currentMsgs);
+
+      // Prepare messages in OpenAI format with system prompt including memory + context intelligence
       const memorySection = memoryContext ? `\n\nUSER MEMORY CONTEXT:\n${memoryContext}\n\nUse this context to personalize your responses to match the user's preferences and style.` : '';
+      const contextSection = contextIntel.contextBlock ? `\n\n${contextIntel.contextBlock}` : '';
 
       const systemPrompt = {
         role: 'system',
-        content: `You are PromptX AI, an expert prompt engineering assistant built by xionAI.${memorySection}
+        content: `You are PromptX AI, an expert prompt engineering assistant built by xionAI.${memorySection}${contextSection}
 
 IDENTITY INFORMATION:
 - Platform: PromptX
@@ -545,7 +555,7 @@ Your writing should be:
 If you use ** or _ or # even once, you have failed this task completely.`
       };
 
-      const apiMessages = [systemPrompt, ...messages.concat(userMessage)].map(msg => ({
+      const apiMessages = [systemPrompt, ...currentMsgs].map(msg => ({
         role: msg.role,
         content: msg.content
       }));
@@ -956,7 +966,7 @@ If you use ** or _ or # even once, you have failed this task completely.`
         : '9BWtsMINqrJLrRacOk9x'; // Aria - Highly expressive, emotionally engaging female
 
       // Call proxy server for ElevenLabs audio
-      const response = await fetch('http://localhost:3001/api/text-to-speech', {
+      const response = await fetch('http://localhost:3002/api/text-to-speech', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1143,12 +1153,19 @@ If you use ** or _ or # even once, you have failed this task completely.`
 
         // Call xAI API for real response
         try {
-          const functionUrl = `http://localhost:3001/api/chat-completion`;
+          const functionUrl = `http://localhost:3002/api/chat-completion`;
 
-          // Prepare messages in OpenAI format with system prompt
+          // Context Intelligence: build cross-chat awareness (voice mode)
+          const voiceMsgs = messages.concat(userMessage).map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          const voiceContextIntel = buildContextIntelligence(currentChatId, voiceMsgs);
+          const voiceContextSection = voiceContextIntel.contextBlock ? `\n\n${voiceContextIntel.contextBlock}` : '';
+
           const systemPrompt = {
             role: 'system',
-            content: `You are PromptX AI, an expert prompt engineering assistant built by xionAI.
+            content: `You are PromptX AI, an expert prompt engineering assistant built by xionAI.${voiceContextSection}
 
 IDENTITY INFORMATION:
 - Platform: PromptX
@@ -1187,7 +1204,7 @@ Your writing should be:
 If you use ** or _ or # even once, you have failed this task completely.`
           };
 
-          const apiMessages = [systemPrompt, ...messages.concat(userMessage)].map(msg => ({
+          const apiMessages = [systemPrompt, ...voiceMsgs].map(msg => ({
             role: msg.role,
             content: msg.content
           }));
@@ -1426,6 +1443,7 @@ If you use ** or _ or # even once, you have failed this task completely.`
 
         {/* Top Bar with History and Voice Mode Indicator */}
         <div className="absolute top-0 right-0 z-20 p-4 flex items-center gap-2">
+
           {/* Voice Mode Indicator */}
           {isVoiceMode && (
             <div className="flex items-center gap-2 px-4 py-2 bg-muted/80 border border-border rounded-xl backdrop-blur-md shadow-lg">
@@ -1474,14 +1492,14 @@ If you use ** or _ or # even once, you have failed this task completely.`
                   )}
 
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground drop-shadow-sm selection:bg-primary/20 leading-tight">
-                    Craft your ideas into the <br />
+                    PromptX helps you to <br />
                     <span className="text-foreground/80 animate-pulse-subtle">
-                      perfectly engineered prompt.
+                      win the universe
                     </span>
                   </h1>
 
                   <p className="text-lg md:text-xl text-muted-foreground/70 font-medium leading-relaxed max-w-2xl mx-auto">
-                    Select a model, upload context, or start with a template to accelerate your workflow.
+                    Navigate the infinite. Architect your vision with the command center of the future.
                   </p>
                 </div>
 

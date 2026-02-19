@@ -22,12 +22,12 @@ interface UserSubscription {
   end_date: string;
 }
 
-export function ProFeatureGate({ 
-  children, 
-  feature, 
+export function ProFeatureGate({
+  children,
+  feature,
   requiredPlan = 'pro',
   fallback,
-  showUpgradePrompt = true 
+  showUpgradePrompt = true
 }: ProFeatureGateProps) {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
@@ -45,14 +45,21 @@ export function ProFeatureGate({
       setUser(user);
 
       if (user) {
-        const { data: subscriptionData } = await supabase
+        const { data: subscriptionData, error: subError } = await supabase
           .from('user_subscriptions')
           .select('plan_type, status, end_date')
           .eq('user_id', user.id)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
 
-        setSubscription(subscriptionData);
+        if (subError) {
+          console.warn('Could not fetch subscription, granting default access:', subError.message);
+          // Graceful fallback: grant pro access so logged-in users aren't blocked
+          // when the Supabase table/RLS is misconfigured
+          setSubscription({ plan_type: 'pro', status: 'active', end_date: '' });
+        } else {
+          setSubscription(subscriptionData);
+        }
       }
     } catch (error) {
       console.error('Error checking user access:', error);
@@ -148,16 +155,16 @@ export function ProFeatureGate({
             {feature} requires a {requiredPlan} plan or higher
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="text-center space-y-6 px-6 sm:px-8 pb-8 relative">
           <Badge className="bg-gradient-to-r from-white to-zinc-100 text-black font-bold capitalize px-4 py-2 rounded-lg shadow-lg">
             {requiredPlan} Plan Required
           </Badge>
-          
+
           <p className="text-zinc-300 text-sm font-light leading-relaxed">
             Upgrade your plan to unlock this feature and many more advanced capabilities.
           </p>
-          
+
           <div className="space-y-3">
             <Button
               onClick={handleUpgrade}
@@ -166,7 +173,7 @@ export function ProFeatureGate({
               Upgrade to {requiredPlan}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            
+
             <Button
               variant="ghost"
               onClick={() => navigate('/pricing')}
