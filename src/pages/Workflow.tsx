@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Layers, Plus, FileText, CalendarClock } from "lucide-react";
 import { buildTemplateWorkflow } from "@/lib/templateDefinitions";
 import { ScheduleModal } from "@/components/workflow/ScheduleModal";
+import { ShareModal } from "@/components/workflow/ShareModal";
+import { WorkflowTemplates } from "@/components/workflow/WorkflowTemplates";
 import { useCollaborativeWorkflow } from "@/hooks/useCollaborativeWorkflow";
 import { CollaboratorCursors } from "@/components/workflow/CollaboratorCursors";
 import { CollaboratorAvatars } from "@/components/workflow/CollaboratorAvatars";
@@ -25,6 +27,7 @@ const Workflow = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showResults, setShowResults] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const prevExecutionStatus = useRef<string | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +104,45 @@ const Workflow = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state, loadTemplate]);
+
+  // Handle shared workflow URL (?shared=<id>)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sharedId = params.get('shared');
+    if (!sharedId) return;
+
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+    async function loadShared() {
+      try {
+        const res = await fetch(`${API_BASE}/api/workflows/shared/${sharedId}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const wf = data.workflow;
+        const { autoLayout, wfUid } = await import('@/lib/workflowEngine');
+        const nodes = autoLayout(wf.steps?.nodes || [], wf.steps?.edges || []);
+        const definition = {
+          id: `shared-${wf.id}`,
+          title: wf.name || 'Shared Workflow',
+          description: wf.description || '',
+          goal: '',
+          nodes,
+          edges: wf.steps?.edges || [],
+          createdAt: new Date(wf.created_at).getTime(),
+          updatedAt: new Date(wf.updated_at).getTime(),
+        };
+        loadTemplate(definition);
+        // Remove ?shared from URL to avoid re-loading
+        window.history.replaceState({}, document.title, '/workflow');
+        const { toast } = await import('sonner');
+        toast.success(`Loaded shared workflow: ${definition.title}`);
+      } catch (err: any) {
+        const { toast } = await import('sonner');
+        toast.error('Failed to load shared workflow: ' + err.message);
+      }
+    }
+    loadShared();
+  }, [location.search, loadTemplate]);
 
   if (loading) {
     return (
@@ -221,12 +263,13 @@ const Workflow = () => {
               activeWorkflow={activeWorkflow}
               collaboratorSlot={<CollaboratorAvatars peers={peers} connectionStatus={connectionStatus} />}
               onSchedule={() => setShowSchedule(true)}
+              onShare={() => setShowShare(true)}
               onViewResults={() => setShowResults(true)}
               showResultsButton={(state.execution?.status === 'completed' || state.execution?.status === 'failed') && !showResults}
             />
           )}
 
-          {/* Canvas with Collaboration Overlay */}
+          {/* Canvas with Collaboration Overlay — or Templates when no workflow active */}
           <div
             ref={canvasContainerRef}
             className="relative flex-1"
@@ -240,23 +283,29 @@ const Workflow = () => {
             }}
             onMouseLeave={() => broadcastCursor(null, null)}
           >
-            <WorkflowCanvas
-              workflow={activeWorkflow}
-              selectedNodeId={state.selectedNodeId}
-              onNodeClick={(nodeId) => selectNode(
-                state.selectedNodeId === nodeId ? null : nodeId
-              )}
-              isEditMode={isEditMode}
-              onNodeDrag={moveNode}
-              onRemoveNode={removeNode}
-              onAddNode={addNode}
-              onAddEdge={addEdge}
-              onRemoveEdge={removeEdge}
-              onDuplicateNode={duplicateNode}
-              onUndo={undo}
-              onRedo={redo}
-            />
-            <CollaboratorCursors peers={peers} />
+            {activeWorkflow ? (
+              <>
+                <WorkflowCanvas
+                  workflow={activeWorkflow}
+                  selectedNodeId={state.selectedNodeId}
+                  onNodeClick={(nodeId) => selectNode(
+                    state.selectedNodeId === nodeId ? null : nodeId
+                  )}
+                  isEditMode={isEditMode}
+                  onNodeDrag={moveNode}
+                  onRemoveNode={removeNode}
+                  onAddNode={addNode}
+                  onAddEdge={addEdge}
+                  onRemoveEdge={removeEdge}
+                  onDuplicateNode={duplicateNode}
+                  onUndo={undo}
+                  onRedo={redo}
+                />
+                <CollaboratorCursors peers={peers} />
+              </>
+            ) : (
+              <WorkflowTemplates />
+            )}
           </div>
 
           {/* Chat Input */}
@@ -302,6 +351,16 @@ const Workflow = () => {
           <ScheduleModal
             open={showSchedule}
             onClose={() => setShowSchedule(false)}
+            workflowId={activeWorkflow.id}
+            workflowTitle={activeWorkflow.title}
+          />
+        )}
+
+        {/* Share Modal */}
+        {activeWorkflow && (
+          <ShareModal
+            open={showShare}
+            onClose={() => setShowShare(false)}
             workflowId={activeWorkflow.id}
             workflowTitle={activeWorkflow.title}
           />

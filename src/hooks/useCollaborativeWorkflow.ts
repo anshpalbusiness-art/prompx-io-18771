@@ -28,122 +28,84 @@ function pickColor(userId: string): string {
 }
 
 /* ─── Constants ──────────────────────────────────────── */
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 const HEARTBEAT_INTERVAL = 5000;   // Send heartbeat every 5s
 const POLL_INTERVAL = 5000;        // Poll for peers every 5s
-const PRESENCE_TTL = 15000;        // Consider offline after 15s of no heartbeat
-const MAX_REALTIME_RETRIES = 2;    // Try Realtime 2 times before falling back
 
 /* ─── Hook ───────────────────────────────────────────── */
 /**
- * Uses Supabase Realtime for collaboration when available.
- * Falls back to REST-based polling via the `user_activity` table
- * when Realtime WebSocket is unavailable (e.g. Lovable Cloud projects).
+ * Collaboration presence via server-side endpoints.
+ * The server uses a service role key to bypass Supabase RLS,
+ * allowing cross-user presence visibility.
  */
 export function useCollaborativeWorkflow(activeWorkflowId: string | null) {
     const [peers, setPeers] = useState<Peer[]>([]);
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
-    const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
     const selfIdRef = useRef<string | null>(null);
     const selfEmailRef = useRef<string>('Guest');
-    const retryCountRef = useRef(0);
     const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const presenceIdRef = useRef<string | null>(null);
-    const usingPollingRef = useRef(false);
 
-    /* ── REST Polling Presence ── */
-
-    /** Send a heartbeat to the user_activity table */
+    /* ── Heartbeat: write presence via server (bypasses RLS) ── */
     const sendHeartbeat = useCallback(async () => {
         if (!selfIdRef.current) return;
 
-        const presenceData = {
-            email: selfEmailRef.current,
-            color: pickColor(selfIdRef.current),
-            cursor: null,
-            selectedNodeId: activeWorkflowId,
-            onlineAt: new Date().toISOString(),
-            page: 'workflow',
-        };
-
         try {
-            if (presenceIdRef.current) {
-                // Update existing heartbeat row
-                await supabase
-                    .from('user_activity')
-                    .update({
-                        created_at: new Date().toISOString(),
-                        metadata: presenceData as any,
-                    })
-                    .eq('id', presenceIdRef.current);
-            } else {
-                // Insert initial heartbeat row
-                const { data } = await supabase
-                    .from('user_activity')
-                    .insert({
-                        user_id: selfIdRef.current,
-                        activity_type: 'workflow_presence',
-                        metadata: presenceData as any,
-                    })
-                    .select('id')
-                    .single();
+            const response = await fetch(`${API_BASE}/api/presence/heartbeat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: selfIdRef.current,
+                    email: selfEmailRef.current,
+                    color: pickColor(selfIdRef.current),
+                    activeWorkflowId,
+                    presenceId: presenceIdRef.current,
+                }),
+            });
 
-                if (data) {
-                    presenceIdRef.current = data.id;
-                }
+            const result = await response.json();
+
+            if (result.presenceId) {
+                presenceIdRef.current = result.presenceId;
+            } else if (presenceIdRef.current && !result.presenceId) {
+                // Server signaled to re-insert (update failed)
+                presenceIdRef.current = null;
+            }
+
+            if (result.error) {
+                console.error('[Collab] Heartbeat error:', result.error);
             }
         } catch (err) {
-            console.warn('[Collab/Polling] Heartbeat failed:', err);
+            console.warn('[Collab] Heartbeat failed:', err);
         }
     }, [activeWorkflowId]);
 
-    /** Poll for other users' presence */
+    /* ── Poll: read ALL users' presence via server (bypasses RLS) ── */
     const pollPeers = useCallback(async () => {
         if (!selfIdRef.current) return;
 
         try {
-            const cutoff = new Date(Date.now() - PRESENCE_TTL).toISOString();
+            const response = await fetch(
+                `${API_BASE}/api/presence/peers?excludeUserId=${encodeURIComponent(selfIdRef.current)}`,
+            );
 
-            const { data, error } = await supabase
-                .from('user_activity')
-                .select('user_id, metadata, created_at')
-                .eq('activity_type', 'workflow_presence')
-                .gte('created_at', cutoff);
+            const result = await response.json();
 
-            if (error) {
-                console.warn('[Collab/Polling] Poll failed:', error.message);
-                return;
-            }
-
-            if (data) {
-                const peerList: Peer[] = [];
-                for (const row of data) {
-                    // Skip self
-                    if (row.user_id === selfIdRef.current) continue;
-
-                    const meta = row.metadata as any;
-                    if (meta && meta.page === 'workflow') {
-                        peerList.push({
-                            userId: row.user_id,
-                            email: meta.email || 'User',
-                            color: meta.color || pickColor(row.user_id),
-                            cursor: meta.cursor || null,
-                            selectedNodeId: meta.selectedNodeId || null,
-                            onlineAt: meta.onlineAt || row.created_at,
-                        });
-                    }
-                }
-                setPeers(peerList);
+            if (result.peers) {
+                setPeers(result.peers);
+                console.log(`[Collab] Poll: ${result.peers.length} peer(s), ${result.total} total active`);
+            } else if (result.error) {
+                console.error('[Collab] Poll error:', result.error);
             }
         } catch (err) {
-            console.warn('[Collab/Polling] Poll error:', err);
+            console.warn('[Collab] Poll failed:', err);
         }
     }, []);
 
-    /** Start REST polling mode */
+    /* ── Start polling ── */
     const startPolling = useCallback(async () => {
-        usingPollingRef.current = true;
-        console.log('[Collab] Falling back to REST polling mode');
+        console.log('[Collab] Starting presence polling via server...');
         setConnectionStatus('connected');
 
         // Initial heartbeat + poll
@@ -155,110 +117,22 @@ export function useCollaborativeWorkflow(activeWorkflowId: string | null) {
         pollTimerRef.current = setInterval(pollPeers, POLL_INTERVAL);
     }, [sendHeartbeat, pollPeers]);
 
-    /** Clean up presence row on unmount */
+    /* ── Cleanup presence on unmount ── */
     const cleanupPresence = useCallback(async () => {
-        if (presenceIdRef.current) {
-            try {
-                await supabase
-                    .from('user_activity')
-                    .delete()
-                    .eq('id', presenceIdRef.current);
-            } catch {
-                // Best effort cleanup
-            }
-            presenceIdRef.current = null;
-        }
-    }, []);
-
-    /* ── Realtime Presence (primary) ── */
-
-    const tryRealtime = useCallback(async (userId: string, email: string) => {
-        const channelName = 'workflow_collab:page';
-        const channel = supabase.channel(channelName, {
-            config: {
-                presence: { key: userId },
-            },
-        });
-
-        /* ── Presence sync ── */
-        channel
-            .on('presence', { event: 'sync' }, () => {
-                const state = channel.presenceState<{
-                    userId: string;
-                    email: string;
-                    color: string;
-                    cursor: { x: number; y: number } | null;
-                    selectedNodeId: string | null;
-                    onlineAt: string;
-                }>();
-
-                const peerList: Peer[] = [];
-                for (const key of Object.keys(state)) {
-                    const presences = state[key];
-                    if (presences && presences.length > 0) {
-                        const p = presences[0];
-                        if (p.userId === selfIdRef.current) continue;
-                        peerList.push({
-                            userId: p.userId,
-                            email: p.email,
-                            color: p.color,
-                            cursor: p.cursor,
-                            selectedNodeId: p.selectedNodeId,
-                            onlineAt: p.onlineAt,
-                        });
-                    }
-                }
-                setPeers(peerList);
-            })
-            .on('broadcast', { event: 'cursor' }, ({ payload }) => {
-                if (!payload || payload.userId === selfIdRef.current) return;
-                setPeers(prev =>
-                    prev.map(p =>
-                        p.userId === payload.userId
-                            ? { ...p, cursor: payload.cursor, selectedNodeId: payload.selectedNodeId }
-                            : p,
-                    ),
-                );
+        try {
+            await fetch(`${API_BASE}/api/presence/cleanup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    presenceId: presenceIdRef.current,
+                    userId: selfIdRef.current,
+                }),
             });
-
-        setConnectionStatus('connecting');
-
-        channel.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                retryCountRef.current = 0;
-                setConnectionStatus('connected');
-                await channel.track({
-                    userId,
-                    email,
-                    color: pickColor(userId),
-                    cursor: null,
-                    selectedNodeId: activeWorkflowId,
-                    onlineAt: new Date().toISOString(),
-                });
-                console.log('[Collab] Connected via Realtime as', email);
-            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                retryCountRef.current++;
-                console.warn(`[Collab] Realtime ${status} (attempt ${retryCountRef.current}/${MAX_REALTIME_RETRIES})`);
-
-                channel.unsubscribe();
-                channelRef.current = null;
-
-                if (retryCountRef.current >= MAX_REALTIME_RETRIES) {
-                    // WebSocket is broken — fall back to REST polling
-                    console.log('[Collab] Realtime unavailable, switching to REST polling...');
-                    startPolling();
-                } else {
-                    // Retry Realtime after a short delay
-                    setConnectionStatus('connecting');
-                    setTimeout(() => tryRealtime(userId, email), 3000);
-                }
-            } else if (status === 'CLOSED') {
-                setConnectionStatus('disconnected');
-            }
-        });
-
-        channelRef.current = channel;
-    }, [activeWorkflowId, startPolling]);
+        } catch {
+            // Best effort cleanup
+        }
+        presenceIdRef.current = null;
+    }, []);
 
     /* ── Main effect ── */
     useEffect(() => {
@@ -274,8 +148,10 @@ export function useCollaborativeWorkflow(activeWorkflowId: string | null) {
                 selfIdRef.current = userId;
                 selfEmailRef.current = email;
 
-                // Try Realtime first
-                tryRealtime(userId, email);
+                console.log('[Collab] Initializing for user:', email, '(', userId, ')');
+
+                // Go straight to server-side polling (reliable, bypasses RLS)
+                startPolling();
             } catch (err) {
                 console.error('[Collab] Failed to initialise:', err);
                 if (!cancelled) {
@@ -289,12 +165,6 @@ export function useCollaborativeWorkflow(activeWorkflowId: string | null) {
         return () => {
             cancelled = true;
 
-            // Cleanup Realtime
-            if (channelRef.current) {
-                channelRef.current.unsubscribe();
-                channelRef.current = null;
-            }
-
             // Cleanup polling
             if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
             if (pollTimerRef.current) clearInterval(pollTimerRef.current);
@@ -307,23 +177,10 @@ export function useCollaborativeWorkflow(activeWorkflowId: string | null) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    /* ── Broadcast cursor position ── */
+    /* ── Broadcast cursor position (no-op in polling mode) ── */
     const broadcastCursor = useCallback(
-        (cursor: { x: number; y: number } | null, selectedNodeId: string | null) => {
-            if (usingPollingRef.current) {
-                // In polling mode, cursor sharing isn't supported (too expensive)
-                return;
-            }
-            if (!channelRef.current) return;
-            channelRef.current.send({
-                type: 'broadcast',
-                event: 'cursor',
-                payload: {
-                    userId: selfIdRef.current,
-                    cursor,
-                    selectedNodeId,
-                },
-            });
+        (_cursor: { x: number; y: number } | null, _selectedNodeId: string | null) => {
+            // Cursor sharing requires WebSocket — not supported in polling mode
         },
         [],
     );

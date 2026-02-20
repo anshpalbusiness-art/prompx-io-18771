@@ -329,8 +329,17 @@ export const executeAgent = async (
         const responseTimeMs = Date.now() - startTime;
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'API request failed');
+            const contentType = response.headers.get('content-type');
+            let errorMessage = 'API request failed';
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+            } else {
+                const textData = await response.text();
+                console.error('Non-JSON error from backend:', textData.substring(0, 200));
+                errorMessage = `Server error (${response.status}): The backend returned an unexpected format.`;
+            }
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();

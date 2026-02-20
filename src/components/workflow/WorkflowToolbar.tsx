@@ -1,7 +1,9 @@
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Trash2, Clock, Pencil, Check, Undo2, Redo2, BookmarkPlus, Share2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Trash2, Clock, Pencil, Check, Undo2, Redo2, Save, Share2 } from 'lucide-react';
 import type { WorkflowExecution, WorkflowDefinition } from '@/lib/workflowEngine';
+import { saveWorkflowToCloud } from '@/lib/workflowEngine';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface WorkflowToolbarProps {
@@ -25,6 +27,7 @@ interface WorkflowToolbarProps {
     collaboratorSlot?: ReactNode;
     // New Props for Schedule/Results
     onSchedule?: () => void;
+    onShare?: () => void;
     onViewResults?: () => void;
     showResultsButton?: boolean;
 }
@@ -46,6 +49,7 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
     activeWorkflow,
     collaboratorSlot,
     onSchedule,
+    onShare,
     onViewResults,
     showResultsButton = false,
 }) => {
@@ -236,41 +240,42 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
             {/* Save / Share */}
             <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/50 rounded-xl flex items-center overflow-hidden">
                 <button
-                    onClick={() => {
-                        if (!activeWorkflow) return;
-                        const title = window.prompt('Template name:', activeWorkflow.title);
-                        if (!title) return;
-                        // Save to localStorage for now (DB in production)
-                        const saved = JSON.parse(localStorage.getItem('workflow_templates') || '[]');
-                        saved.push({
-                            id: `custom-${Date.now()}`,
-                            title,
-                            description: activeWorkflow.description || '',
-                            nodes: activeWorkflow.nodes,
-                            edges: activeWorkflow.edges,
-                            createdAt: new Date().toISOString(),
-                        });
-                        localStorage.setItem('workflow_templates', JSON.stringify(saved));
-                        toast.success('Saved as template!');
+                    onClick={async () => {
+                        if (!activeWorkflow || !workflowId) return;
+                        try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) { toast.error('Please log in to save'); return; }
+                            const cloudId = await saveWorkflowToCloud(user.id, activeWorkflow, workflowId);
+                            if (cloudId) {
+                                toast.success('Workflow saved to cloud!');
+                            } else {
+                                toast.error('Save failed — please try again');
+                            }
+                        } catch (err: any) {
+                            toast.error('Save failed: ' + err.message);
+                        }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-40"
-                    title="Save as template"
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors disabled:opacity-40"
+                    title="Save workflow"
                     disabled={isEditMode || isExecuting}
                 >
-                    <BookmarkPlus className="w-3.5 h-3.5" />
+                    <Save className="w-3.5 h-3.5" />
                     Save
                 </button>
                 <div className="w-px h-5 bg-zinc-800" />
                 <button
                     onClick={() => {
-                        if (!activeWorkflow) return;
-                        const json = JSON.stringify({
-                            title: activeWorkflow.title,
-                            nodes: activeWorkflow.nodes,
-                            edges: activeWorkflow.edges,
-                        }, null, 2);
-                        navigator.clipboard.writeText(json);
-                        toast.success('Workflow copied to clipboard!');
+                        if (onShare) {
+                            onShare();
+                        } else if (activeWorkflow) {
+                            const json = JSON.stringify({
+                                title: activeWorkflow.title,
+                                nodes: activeWorkflow.nodes,
+                                edges: activeWorkflow.edges,
+                            }, null, 2);
+                            navigator.clipboard.writeText(json);
+                            toast.success('Workflow copied to clipboard!');
+                        }
                     }}
                     className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors disabled:opacity-40"
                     title="Share workflow"

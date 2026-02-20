@@ -213,32 +213,92 @@ export async function executeAgent(
     return executeViaAI(node, inputData, 'ai-simulated');
 }
 
-// Execute via a real integration adapter
+// Built-in stub adapters for common integrations (used when no real adapter connected)
+const STUB_ADAPTERS: Record<string, (input: Record<string, any>) => Promise<{ data: Record<string, any>; source: string }>> = {
+    'web-search': async (input) => {
+        // Simulate a web search using DuckDuckGo instant answers API
+        const query = input.query || input.searchTerm || Object.values(input).find(v => typeof v === 'string') || 'AI workflow automation';
+        try {
+            const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(String(query))}&format=json&no_html=1&skip_disambig=1`);
+            const data = await res.json();
+            return {
+                data: {
+                    query: String(query),
+                    abstract: data.Abstract || 'No summary available',
+                    source: data.AbstractSource || 'DuckDuckGo',
+                    url: data.AbstractURL || '',
+                    relatedTopics: (data.RelatedTopics || []).slice(0, 5).map((t: any) => t.Text || t.Name || '').filter(Boolean),
+                },
+                source: 'web-search-live',
+            };
+        } catch {
+            return {
+                data: { query: String(query), results: 'Web search unavailable — simulated results', relatedTopics: ['AI automation', 'workflow tools', 'agent orchestration'] },
+                source: 'web-search-simulated',
+            };
+        }
+    },
+    'email': async (input) => {
+        // Stub: log email (no real sending)
+        return {
+            data: {
+                status: 'logged',
+                to: input.to || 'user@example.com',
+                subject: input.subject || 'Workflow Notification',
+                body: input.body || input.message || 'Workflow completed successfully.',
+                note: 'Email logged (connect email integration for real sending)',
+            },
+            source: 'email-stub',
+        };
+    },
+    'notification': async (input) => {
+        return {
+            data: {
+                status: 'sent',
+                message: input.message || 'Workflow completed.',
+                channel: 'in-app',
+                timestamp: new Date().toISOString(),
+            },
+            source: 'notification-stub',
+        };
+    },
+};
+
+// Execute via a real integration adapter (or built-in stub)
 async function executeViaIntegration(
     node: WorkflowNode,
     inputData: Record<string, any>,
 ): Promise<{ data: Record<string, any>; source: string } | null> {
-    // Dynamically import to avoid circular deps
-    const { integrationRegistry } = await import('./integrations/registry');
-    const adapter = integrationRegistry.get(node.integrationId!);
-
-    if (!adapter || !adapter.isConnected()) return null;
-
-    const result = await adapter.execute({
+    const flatInput = {
         ...inputData,
-        // Flatten parent outputs for the adapter
         ...(inputData._parentOutputs
             ? (Object.values(inputData._parentOutputs) as Record<string, any>[]).reduce(
                 (acc, o) => ({ ...acc, ...(o || {}) }), {} as Record<string, any>
             )
             : {}),
-    });
+    };
 
-    if (!result.success) {
-        throw new Error(result.error || 'Integration execution failed');
+    // Try real integration adapter first
+    try {
+        const { integrationRegistry } = await import('./integrations/registry');
+        const adapter = integrationRegistry.get(node.integrationId!);
+        if (adapter && adapter.isConnected()) {
+            const result = await adapter.execute(flatInput);
+            if (!result.success) throw new Error(result.error || 'Integration execution failed');
+            return { data: result.data, source: result.source };
+        }
+    } catch (err) {
+        // Fall through to stubs
     }
 
-    return { data: result.data, source: result.source };
+    // Try built-in stub adapter
+    const stub = node.integrationId ? STUB_ADAPTERS[node.integrationId] : null;
+    if (stub) {
+        return stub(flatInput);
+    }
+
+    // No adapter available
+    return null;
 }
 
 // Execute via AI (Grok-3) — with timeout and retry
@@ -383,7 +443,7 @@ export async function executeWorkflow(
     return { success: true };
 }
 
-// ─── Persistence ───
+// ─── Persistence (localStorage as fallback) ───
 const STORAGE_KEY = 'promptx_workflows';
 
 export function saveWorkflows(workflows: Record<string, WorkflowDefinition>): void {
@@ -401,5 +461,88 @@ export function loadWorkflows(): Record<string, WorkflowDefinition> {
     } catch (e) {
         console.error('Failed to load workflows:', e);
         return {};
+    }
+}
+
+// ─── Cloud Persistence (via server API → Supabase) ───
+
+/** Convert a Supabase saved_workflow row into a WorkflowDefinition */
+function rowToDefinition(row: any): WorkflowDefinition {
+    const steps = row.steps || {};
+    return {
+        id: row.id,
+        title: row.name,
+        description: row.description || '',
+        goal: '',
+        nodes: (steps.nodes || []).map((n: any) => ({ ...n, position: n.position || { x: 0, y: 0 } })),
+        edges: steps.edges || [],
+        createdAt: new Date(row.created_at).getTime(),
+        updatedAt: new Date(row.updated_at).getTime(),
+    };
+}
+
+/** Load all workflows from cloud for the given user */
+export async function loadWorkflowsFromCloud(
+    userId: string,
+): Promise<Record<string, WorkflowDefinition>> {
+    try {
+        const res = await fetch(`${API_BASE}/api/workflows?userId=${encodeURIComponent(userId)}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const result: Record<string, WorkflowDefinition> = {};
+        for (const row of data.workflows || []) {
+            result[row.id] = rowToDefinition(row);
+        }
+        return result;
+    } catch (err) {
+        console.error('[Cloud] Load failed, falling back to localStorage:', err);
+        return loadWorkflows(); // fallback
+    }
+}
+
+/** Save (create or update) a single workflow to the cloud */
+export async function saveWorkflowToCloud(
+    userId: string,
+    definition: WorkflowDefinition,
+    cloudId?: string, // Supabase UUID if updating
+): Promise<string | null> {
+    try {
+        const res = await fetch(`${API_BASE}/api/workflows`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: cloudId || undefined,
+                userId,
+                name: definition.title || 'Untitled Workflow',
+                description: definition.description || '',
+                nodes: definition.nodes,
+                edges: definition.edges,
+            }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        return data.workflow?.id || null;
+    } catch (err) {
+        console.error('[Cloud] Save failed:', err);
+        return null;
+    }
+}
+
+/** Delete a workflow from the cloud */
+export async function deleteWorkflowFromCloud(
+    userId: string,
+    cloudId: string,
+): Promise<boolean> {
+    try {
+        const res = await fetch(
+            `${API_BASE}/api/workflows/${cloudId}?userId=${encodeURIComponent(userId)}`,
+            { method: 'DELETE' },
+        );
+        const data = await res.json();
+        return !!data.ok;
+    } catch (err) {
+        console.error('[Cloud] Delete failed:', err);
+        return false;
     }
 }

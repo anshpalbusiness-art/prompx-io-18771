@@ -48,6 +48,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 
 // Copied from PromptEngineer.tsx to maintain available options
 const AI_MODELS = [
@@ -246,7 +247,7 @@ const TypewriterText = ({ text, onComplete }: { text: string, onComplete?: () =>
     }
   }, [isComplete, onComplete]);
 
-  return <>{displayedText}</>;
+  return <MarkdownRenderer content={displayedText} />;
 };
 
 export const DashboardChatbot = () => {
@@ -473,14 +474,17 @@ export const DashboardChatbot = () => {
 
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
+
+    // Capture files before clearing state
+    const filesToProcess = [...attachedFiles];
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: input || (filesToProcess.length > 0 ? `[Uploaded ${filesToProcess.length} file(s) for analysis]` : ''),
       timestamp: new Date(),
-      attachments: attachedFiles.length > 0 ? attachedFiles.map(f => f.name) : undefined
+      attachments: filesToProcess.length > 0 ? filesToProcess.map(f => f.name) : undefined
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -490,9 +494,18 @@ export const DashboardChatbot = () => {
 
     // Call xAI API via Supabase Edge Function
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const functionUrl = `http://localhost:3002/api/chat-completion`;
 
+      // ── Extract file contents ──
+      let extractedFiles: ExtractedFile[] = [];
+      if (filesToProcess.length > 0) {
+        try {
+          extractedFiles = await extractAllFiles(filesToProcess);
+        } catch (fileErr) {
+          console.error('File extraction error:', fileErr);
+          toast.error('Some files could not be read');
+        }
+      }
 
       // Learn from user message (non-blocking)
       if (!isIncognito) {
@@ -524,41 +537,76 @@ IDENTITY INFORMATION:
 - Purpose: Expert prompt engineering and AI assistance
 
 ULTRA-CRITICAL RULES - FOLLOW EXACTLY:
-1. NEVER use asterisks (**) for any reason
-2. NEVER use underscores (_) for any reason  
-3. NEVER use hashtags (#) for any reason
-4. NEVER use any markdown syntax whatsoever
-5. Write ONLY in plain text - treat this as if markdown doesn't exist
-
-FORMATTING GUIDE:
-Instead of: **Section Title**
-Write: SECTION TITLE or Section Title:
-
-Instead of: **important point**
-Write: important point (just plain text)
-
-For lists, use:
-- Simple hyphen bullets
-- Or numbered lists: 1. 2. 3.
-- Nothing else
-
-For spacing:
-- Use double line breaks between paragraphs
-- Use single line breaks between list items
-
-Your writing should be:
-- Professional and sophisticated
-- Clear and well-structured  
-- Intelligent and actionable
-- In plain text ONLY - no formatting symbols
-
-If you use ** or _ or # even once, you have failed this task completely.`
+1. ALWAYS format your responses using Markdown.
+2. Use sophisticated headings (## or ###), bulleted/numbered lists, and bold text (**text**) to organize explanations clearly.
+3. For ALL code snippets or terminal commands, ALWAYS use fenced code blocks with the appropriate language identifier (e.g., \`\`\`python).
+4. Do not use plain text formatting for structure; rely strictly on Markdown.
+5. Your tone should be highly professional, structured, intelligently concise, and visually appealing when parsed.
+6. When explaining steps to the user, make them clear, logically ordered, and easy to follow.`
       };
 
-      const apiMessages = [systemPrompt, ...currentMsgs].map(msg => ({
+      // ── Build the API messages with file content ──
+      const hasImages = extractedFiles.some(f => f.isImage);
+      const textFiles = extractedFiles.filter(f => !f.isImage);
+
+      // Build the user message content for the API
+      let userTextContent = input || '';
+
+      // Append text file contents to user message
+      if (textFiles.length > 0) {
+        const fileContentsStr = textFiles.map(f =>
+          `\n\n--- ATTACHED FILE: ${f.name} (${f.type}, ${(f.size / 1024).toFixed(1)} KB) ---\n${f.content}\n--- END OF FILE: ${f.name} ---`
+        ).join('');
+        userTextContent += fileContentsStr;
+
+        if (!input.trim()) {
+          userTextContent = `Please analyze the following uploaded file(s):${fileContentsStr}`;
+        }
+      }
+
+      // Build the final user message for API
+      let apiUserContent: any;
+
+      if (hasImages) {
+        // Use multimodal content array format for images (xAI vision API)
+        const contentParts: any[] = [];
+
+        // Add text part
+        const imagePrompt = !input.trim() && textFiles.length === 0
+          ? 'Please analyze this image and describe what you see in detail.'
+          : userTextContent;
+        contentParts.push({ type: 'text', text: imagePrompt });
+
+        // Add image parts
+        for (const imgFile of extractedFiles.filter(f => f.isImage)) {
+          contentParts.push({
+            type: 'image_url',
+            image_url: { url: imgFile.content }  // base64 data URI
+          });
+        }
+
+        apiUserContent = contentParts;
+      } else {
+        apiUserContent = userTextContent;
+      }
+
+      // Build previous messages (text only)
+      const previousMsgs = currentMsgs.slice(0, -1).map(msg => ({
         role: msg.role,
         content: msg.content
       }));
+
+      // Construct the final user message for the API
+      const finalUserMsg = { role: 'user', content: apiUserContent };
+
+      const apiMessages = [
+        { role: systemPrompt.role, content: systemPrompt.content },
+        ...previousMsgs,
+        finalUserMsg
+      ];
+
+      // Use vision-capable model when images are present
+      const modelToUse = hasImages ? 'grok-2-vision-latest' : 'grok-3';
 
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -567,14 +615,23 @@ If you use ** or _ or # even once, you have failed this task completely.`
         },
         body: JSON.stringify({
           messages: apiMessages,
-          model: 'grok-3',
+          model: modelToUse,
           stream: false
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI response');
+        const contentType = response.headers.get('content-type');
+        let errorMessage = 'Failed to get AI response';
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          const textData = await response.text();
+          console.error('Non-JSON error response from backend:', textData.substring(0, 200));
+          errorMessage = `Server error (${response.status}): The backend returned an unexpected format. Ensure the server is running and payload sizes are within limits.`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -636,6 +693,135 @@ If you use ** or _ or # even once, you have failed this task completely.`
   const removeAttachment = (index: number) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
     toast.info("Attachment removed");
+  };
+
+  // ─── File Content Extraction Helpers ───
+  const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'];
+  const TEXT_EXTENSIONS = [
+    'txt', 'md', 'csv', 'json', 'xml', 'html', 'htm', 'css', 'js', 'jsx',
+    'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'rb', 'go', 'rs',
+    'php', 'swift', 'kt', 'sh', 'bash', 'zsh', 'yaml', 'yml', 'toml',
+    'ini', 'cfg', 'conf', 'env', 'sql', 'r', 'lua', 'pl', 'scala', 'log',
+    'gitignore', 'dockerfile', 'makefile'
+  ];
+
+  const getFileExtension = (name: string): string => {
+    const parts = name.toLowerCase().split('.');
+    return parts.length > 1 ? parts[parts.length - 1] : '';
+  };
+
+  const isImageFile = (file: File): boolean => {
+    if (file.type.startsWith('image/')) return true;
+    return IMAGE_EXTENSIONS.includes(getFileExtension(file.name));
+  };
+
+  const isTextFile = (file: File): boolean => {
+    if (file.type.startsWith('text/')) return true;
+    if (file.type === 'application/json') return true;
+    if (file.type === 'application/xml') return true;
+    if (file.type === 'application/javascript') return true;
+    return TEXT_EXTENSIONS.includes(getFileExtension(file.name));
+  };
+
+  const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  interface ExtractedFile {
+    name: string;
+    type: string;
+    size: number;
+    isImage: boolean;
+    content: string;  // text content or base64 data URI
+  }
+
+  const extractFileContent = async (file: File): Promise<ExtractedFile> => {
+    // Handle zero-size files (cloud files, etc.)
+    if (file.size === 0) {
+      return {
+        name: file.name,
+        type: file.type || 'unknown',
+        size: 0,
+        isImage: false,
+        content: `[Cloud/linked file: ${file.name} - content not available locally]`
+      };
+    }
+
+    if (isImageFile(file)) {
+      const base64 = await readFileAsBase64(file);
+      return {
+        name: file.name,
+        type: file.type || 'image/unknown',
+        size: file.size,
+        isImage: true,
+        content: base64
+      };
+    }
+
+    if (isTextFile(file)) {
+      const text = await readFileAsText(file);
+      // Truncate very large files to avoid token limits
+      const maxChars = 50000;
+      const truncated = text.length > maxChars
+        ? text.slice(0, maxChars) + `\n\n... [Truncated: file is ${(file.size / 1024).toFixed(1)} KB, showing first ${maxChars} characters]`
+        : text;
+      return {
+        name: file.name,
+        type: file.type || 'text/plain',
+        size: file.size,
+        isImage: false,
+        content: truncated
+      };
+    }
+
+    // For PDFs and other binary files, try to read as text (best-effort)
+    if (file.type === 'application/pdf') {
+      try {
+        const text = await readFileAsText(file);
+        // PDF text extraction is lossy but can capture some content
+        const cleanedText = text.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s{3,}/g, ' ').trim();
+        if (cleanedText.length > 100) {
+          const maxChars = 50000;
+          const truncated = cleanedText.length > maxChars
+            ? cleanedText.slice(0, maxChars) + '\n[Truncated]'
+            : cleanedText;
+          return {
+            name: file.name,
+            type: 'application/pdf',
+            size: file.size,
+            isImage: false,
+            content: `[PDF File: ${file.name}, ${(file.size / 1024).toFixed(1)} KB]\nExtracted text (may be partial):\n${truncated}`
+          };
+        }
+      } catch { /* fall through */ }
+    }
+
+    // Fallback for unsupported binary files
+    return {
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+      isImage: false,
+      content: `[Binary file: ${file.name}, Type: ${file.type || 'unknown'}, Size: ${(file.size / 1024).toFixed(1)} KB - content cannot be read as text]`
+    };
+  };
+
+  const extractAllFiles = async (files: File[]): Promise<ExtractedFile[]> => {
+    return Promise.all(files.map(f => extractFileContent(f)));
   };
 
   const toggleRecording = () => {
@@ -1173,35 +1359,12 @@ IDENTITY INFORMATION:
 - Purpose: Expert prompt engineering and AI assistance
 
 ULTRA-CRITICAL RULES - FOLLOW EXACTLY:
-1. NEVER use asterisks (**) for any reason
-2. NEVER use underscores (_) for any reason  
-3. NEVER use hashtags (#) for any reason
-4. NEVER use any markdown syntax whatsoever
-5. Write ONLY in plain text - treat this as if markdown doesn't exist
-
-FORMATTING GUIDE:
-Instead of: **Section Title**
-Write: SECTION TITLE or Section Title:
-
-Instead of: **important point**
-Write: important point (just plain text)
-
-For lists, use:
-- Simple hyphen bullets
-- Or numbered lists: 1. 2. 3.
-- Nothing else
-
-For spacing:
-- Use double line breaks between paragraphs
-- Use single line breaks between list items
-
-Your writing should be:
-- Professional and sophisticated
-- Clear and well-structured  
-- Intelligent and actionable
-- In plain text ONLY - no formatting symbols
-
-If you use ** or _ or # even once, you have failed this task completely.`
+1. ALWAYS format your responses using Markdown.
+2. Use sophisticated headings (## or ###), bulleted/numbered lists, and bold text (**text**) to organize explanations clearly.
+3. For ALL code snippets or terminal commands, ALWAYS use fenced code blocks with the appropriate language identifier (e.g., \`\`\`python).
+4. Do not use plain text formatting for structure; rely strictly on Markdown.
+5. Your tone should be highly professional, structured, intelligently concise, and visually appealing when parsed.
+6. When explaining steps to the user, make them clear, logically ordered, and easy to follow.`
           };
 
           const apiMessages = [systemPrompt, ...voiceMsgs].map(msg => ({
@@ -1349,7 +1512,7 @@ If you use ** or _ or # even once, you have failed this task completely.`
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background text-foreground relative overflow-hidden">
+    <div className="flex flex-col h-[100vh] bg-background text-foreground relative overflow-hidden">
 
       {/* Chat History Sidebar */}
       <ChatHistorySidebar
@@ -1566,42 +1729,29 @@ If you use ** or _ or # even once, you have failed this task completely.`
               {messages.map((message, index) => (
                 <div
                   key={message.id}
-                  className={`flex gap-5 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-6 duration-700`}
+                  className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-6 duration-700 w-full max-w-3xl mx-auto`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {message.role === 'assistant' && (
-                    <Avatar className="w-11 h-11 border border-border shadow-sm mt-1 bg-transparent rounded-xl">
-                      <AvatarImage src="/promptx-logo.png" className="object-contain rounded-xl" />
-                      <AvatarFallback className="bg-transparent rounded-xl">
-                        <img src="/promptx-logo.png" alt="PromptX" className="w-full h-full object-contain rounded-xl" />
+                    <Avatar className="w-8 h-8 mt-1 bg-transparent rounded-full flex-shrink-0">
+                      <AvatarImage src="/promptx-logo.png" className="object-contain" />
+                      <AvatarFallback className="bg-transparent text-[10px] font-bold">
+                        AI
                       </AvatarFallback>
                     </Avatar>
                   )}
 
-                  <div className={`flex flex-col gap-1 max-w-[85%] group`}>
-                    {message.role === 'assistant' && (
-                      <div className="flex items-center gap-3 ml-1.5 mb-0.5">
-                        <span className="text-[11px] text-zinc-600 dark:text-muted-foreground font-bold tracking-wide">
-                          PromptX
-                        </span>
-                        <div className="w-1 h-1 rounded-full bg-border" />
-                        <span className="text-[10px] text-zinc-500 dark:text-muted-foreground/60 font-semibold tabular-nums">
-                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    )}
-
+                  <div className={`flex flex-col gap-1.5 w-full ${message.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%] group`}>
                     <div
                       className={`
-                        relative px-0 py-2 text-[15px] leading-[1.7]
+                        relative text-[16px] leading-[1.65] tracking-[0.01em]
                         ${message.role === 'user'
-                          ? 'text-primary-foreground text-right'
-                          : 'text-foreground text-left'}
+                          ? 'bg-[#1e1e1e] border border-white/[0.05] text-[#ececec] px-5 py-3.5 rounded-3xl rounded-tr-sm shadow-sm'
+                          : 'text-foreground px-0 py-1.5 text-left w-full'}
                       `}
                     >
 
-
-                      <p className={`whitespace-pre-wrap relative z-10 font-normal leading-[1.65] tracking-normal text-[15.5px] antialiased ${message.role === 'user' ? 'text-foreground' : 'text-zinc-800 dark:text-[#ececec]/90'}`}>
+                      <p className={`whitespace-pre-wrap relative z-10 font-normal leading-[1.65] tracking-normal antialiased ${message.role === 'user' ? 'text-[#ececec] text-left' : 'text-zinc-800 dark:text-[#ececec] text-left'}`}>
                         {message.role === 'assistant' && index === messages.length - 1 ? (
                           <TypewriterText text={message.content} />
                         ) : (
@@ -1612,7 +1762,7 @@ If you use ** or _ or # even once, you have failed this task completely.`
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {message.attachments.map((file, i) => (
-                            <Badge key={i} variant="secondary" className="bg-background/20 text-inherit text-xs">
+                            <Badge key={i} variant="secondary" className="bg-white/5 hover:bg-white/10 text-[#ececec] text-xs border border-white/10 px-2 py-0.5 rounded-md font-medium transition-colors">
                               {file}
                             </Badge>
                           ))}
@@ -1621,11 +1771,11 @@ If you use ** or _ or # even once, you have failed this task completely.`
                     </div>
 
                     {message.role === 'assistant' && (
-                      <div className="flex items-center gap-2 mt-1 ml-1.5 transition-all duration-500">
+                      <div className="flex items-center gap-1 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all duration-300"
+                          className="h-7 w-7 text-muted-foreground hover:text-white hover:bg-white/5 rounded-md transition-all"
                           onClick={() => handleCopyMessage(message.content)}
                         >
                           <Copy className="w-3.5 h-3.5" strokeWidth={2} />
@@ -1633,61 +1783,51 @@ If you use ** or _ or # even once, you have failed this task completely.`
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all duration-300"
+                          className="h-7 w-7 text-muted-foreground hover:text-white hover:bg-white/5 rounded-md transition-all"
                           onClick={() => handleRegenerateMessage(message.id)}
                         >
                           <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
                         </Button>
                         <Button
                           variant="ghost"
-                          className="h-8 px-3 text-xs font-semibold text-primary hover:text-primary-foreground hover:bg-primary rounded-xl transition-all duration-300 gap-1.5"
+                          className="h-7 px-2.5 text-[11.5px] font-medium text-muted-foreground hover:text-white hover:bg-white/5 rounded-md transition-all gap-1.5"
                           onClick={() => handleUseInProvider(message.content)}
-                          title={`Copy and open ${selectedModel.name}`}
+                          title={`Use in ${selectedModel.name}`}
                         >
-                          <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
+                          <ExternalLink className="w-3 h-3" strokeWidth={2} />
                           Use in {selectedModel.name}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all duration-300">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-white hover:bg-white/5 rounded-md transition-all">
                               <MoreVertical className="w-3.5 h-3.5" strokeWidth={2} />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent className="bg-background border-border text-foreground">
-                            <DropdownMenuItem onClick={() => handleCopyMessage(message.content)}>
-                              Copy message
+                          <DropdownMenuContent className="bg-[#1e1e1e] border-white/10 text-[#ececec] rounded-xl shadow-2xl">
+                            <DropdownMenuItem onClick={() => handleCopyMessage(message.content)} className="hover:bg-white/5 cursor-pointer">
+                              Copy text
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleRegenerateMessage(message.id)}>
-                              Regenerate
+                            <DropdownMenuItem onClick={() => handleRegenerateMessage(message.id)} className="hover:bg-white/5 cursor-pointer">
+                              Regenerate response
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
                     )}
                   </div>
-
-                  {
-                    message.role === 'user' && (
-                      <Avatar className="w-11 h-11 border-2 border-border shadow-md mt-1">
-                        <AvatarFallback className="bg-muted text-muted-foreground">
-                          <UserIcon className="w-5 h-5" strokeWidth={2.5} />
-                        </AvatarFallback>
-                      </Avatar>
-                    )
-                  }
                 </div>
               ))}
 
               {isLoading && (
-                <div className="flex gap-5 justify-start animate-in fade-in slide-in-from-bottom-6 duration-700">
-                  <Avatar className="w-11 h-11 border border-border shadow-sm mt-1 bg-transparent rounded-xl">
-                    <AvatarImage src="/promptx-logo.png" className="object-contain rounded-xl" />
-                    <AvatarFallback className="bg-transparent rounded-xl">
-                      <img src="/promptx-logo.png" alt="PromptX" className="w-full h-full object-contain rounded-xl" />
+                <div className="flex gap-4 justify-start animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-3xl mx-auto w-full">
+                  <Avatar className="w-8 h-8 mt-1 bg-transparent rounded-full flex-shrink-0">
+                    <AvatarImage src="/promptx-logo.png" className="object-contain" />
+                    <AvatarFallback className="bg-transparent">
+                      <img src="/promptx-logo.png" alt="PromptX" className="w-full h-full object-contain" />
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex items-center justify-center pl-4 py-2">
-                    <ChatbotLoader size={45} text="PromptX" />
+                  <div className="flex items-center justify-center pl-2 py-1.5">
+                    <ChatbotLoader size={40} text="" />
                   </div>
                 </div>
               )}
@@ -1697,12 +1837,12 @@ If you use ** or _ or # even once, you have failed this task completely.`
       </div>
 
       {/* Grok-Style Floating Input Area */}
-      <div className="flex-none p-4 pb-0 z-10 bg-gradient-to-t from-background via-background to-transparent">
+      <div className="flex-none px-4 pt-4 pb-4 z-10 bg-gradient-to-t from-background via-background to-transparent relative">
         {/* Attached Files Display */}
         {attachedFiles.length > 0 && (
-          <div className="max-w-3xl mx-auto mb-3 flex flex-wrap gap-2 px-4">
+          <div className="max-w-3xl mx-auto mb-2 flex flex-wrap gap-2 px-4">
             {attachedFiles.map((file, index) => (
-              <Badge key={index} variant="secondary" className="bg-zinc-100/80 dark:bg-white/[0.08] text-zinc-900 dark:text-white px-3 py-1.5 flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-white/10 shadow-sm">
+              <Badge key={index} variant="secondary" className="bg-zinc-100/80 dark:bg-white/[0.08] text-zinc-900 dark:text-white px-3 py-1.25 flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-white/10 shadow-sm">
                 {file.name}
                 <button onClick={() => removeAttachment(index)} className="hover:text-red-500 dark:hover:text-red-400 transition-colors">
                   <X className="w-3 h-3" />

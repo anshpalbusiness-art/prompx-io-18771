@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, CalendarClock, Check } from 'lucide-react';
+import { X, Clock, CalendarClock, Check, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import {
-    addSchedule, computeNextRun, formatNextRun,
+    computeNextRun, formatNextRun,
     INTERVAL_LABELS, type ScheduleInterval,
 } from '@/lib/schedulerStore';
-import { wfUid } from '@/lib/workflowEngine';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
 interface ScheduleModalProps {
     open: boolean;
@@ -14,27 +17,86 @@ interface ScheduleModalProps {
     workflowTitle: string;
 }
 
+interface ScheduleItem {
+    id: string;
+    workflowId: string;
+    workflowTitle: string;
+    interval: ScheduleInterval;
+    nextRun: number;
+    enabled: boolean;
+    createdAt: string;
+}
+
 const intervals: ScheduleInterval[] = ['every-hour', 'every-6h', 'daily', 'weekly', 'monthly'];
 
 export function ScheduleModal({ open, onClose, workflowId, workflowTitle }: ScheduleModalProps) {
     const [selected, setSelected] = useState<ScheduleInterval>('daily');
     const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+    const [loadingSchedules, setLoadingSchedules] = useState(false);
 
-    const handleSave = () => {
-        addSchedule({
-            id: wfUid(),
-            workflowId,
-            workflowTitle,
-            interval: selected,
-            cronLabel: INTERVAL_LABELS[selected],
-            enabled: true,
-            createdAt: Date.now(),
-            nextRun: computeNextRun(selected),
-            lastRun: null,
-            lastStatus: null,
-        });
-        setSaved(true);
-        setTimeout(() => { setSaved(false); onClose(); }, 1200);
+    // Load existing schedules when modal opens
+    useEffect(() => {
+        if (!open) return;
+        loadSchedules();
+    }, [open]);
+
+    const loadSchedules = async () => {
+        setLoadingSchedules(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const res = await fetch(`${API_BASE}/api/schedules?userId=${encodeURIComponent(user.id)}`);
+            const data = await res.json();
+            setSchedules(data.schedules || []);
+        } catch (err) {
+            console.error('Failed to load schedules:', err);
+        } finally {
+            setLoadingSchedules(false);
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
+            const res = await fetch(`${API_BASE}/api/schedules`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user.id,
+                    workflowId,
+                    workflowTitle,
+                    interval: selected,
+                    nextRun: computeNextRun(selected),
+                }),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+
+            setSaved(true);
+            toast.success('Schedule saved!');
+            await loadSchedules();
+            setTimeout(() => { setSaved(false); }, 1200);
+        } catch (err: any) {
+            toast.error('Failed to save schedule: ' + err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async (scheduleId: string) => {
+        try {
+            await fetch(`${API_BASE}/api/schedules/${scheduleId}`, { method: 'DELETE' });
+            setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+            toast.success('Schedule removed');
+        } catch (err) {
+            toast.error('Failed to delete schedule');
+        }
     };
 
     return (
@@ -72,22 +134,25 @@ export function ScheduleModal({ open, onClose, workflowId, workflowTitle }: Sche
                         </div>
 
                         {/* Body */}
-                        <div className="p-6 space-y-4">
-                            <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Run Interval</p>
-                            <div className="grid grid-cols-2 gap-2.5">
-                                {intervals.map(iv => (
-                                    <button
-                                        key={iv}
-                                        onClick={() => setSelected(iv)}
-                                        className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${selected === iv
+                        <div className="p-6 space-y-5">
+                            {/* Interval Selection */}
+                            <div className="space-y-3">
+                                <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Run Interval</p>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {intervals.map(iv => (
+                                        <button
+                                            key={iv}
+                                            onClick={() => setSelected(iv)}
+                                            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${selected === iv
                                                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
                                                 : 'bg-zinc-800/40 border-zinc-800/40 text-zinc-400 hover:border-zinc-700/60 hover:text-zinc-300'
-                                            }`}
-                                    >
-                                        <Clock className="w-3.5 h-3.5" />
-                                        {INTERVAL_LABELS[iv]}
-                                    </button>
-                                ))}
+                                                }`}
+                                        >
+                                            <Clock className="w-3.5 h-3.5" />
+                                            {INTERVAL_LABELS[iv]}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             {/* Next run preview */}
@@ -97,6 +162,34 @@ export function ScheduleModal({ open, onClose, workflowId, workflowTitle }: Sche
                                     {formatNextRun(computeNextRun(selected))}
                                 </span>
                             </div>
+
+                            {/* Active Schedules */}
+                            {schedules.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Active Schedules</p>
+                                    <div className="space-y-2 max-h-48 overflow-auto">
+                                        {schedules.map(schedule => (
+                                            <div
+                                                key={schedule.id}
+                                                className="flex items-center justify-between px-4 py-3 rounded-xl bg-zinc-800/30 border border-zinc-800/30"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-medium text-zinc-300 truncate">{schedule.workflowTitle}</p>
+                                                    <p className="text-[10px] text-zinc-500">
+                                                        {INTERVAL_LABELS[schedule.interval]} · Next: {formatNextRun(schedule.nextRun)}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDelete(schedule.id)}
+                                                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors ml-2"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer */}
@@ -109,10 +202,10 @@ export function ScheduleModal({ open, onClose, workflowId, workflowTitle }: Sche
                             </button>
                             <button
                                 onClick={handleSave}
-                                disabled={saved}
+                                disabled={saved || saving}
                                 className="px-5 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-all flex items-center gap-1.5 disabled:opacity-70"
                             >
-                                {saved ? <><Check className="w-4 h-4" /> Scheduled!</> : 'Save Schedule'}
+                                {saved ? <><Check className="w-4 h-4" /> Scheduled!</> : saving ? 'Saving...' : 'Save Schedule'}
                             </button>
                         </div>
                     </motion.div>

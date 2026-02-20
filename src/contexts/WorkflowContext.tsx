@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useRef, ReactNode, useEffect, useState } from 'react';
 import {
     WorkflowDefinition,
     WorkflowNode,
@@ -9,9 +9,13 @@ import {
     executeWorkflow as executeWorkflowEngine,
     saveWorkflows,
     loadWorkflows,
+    loadWorkflowsFromCloud,
+    saveWorkflowToCloud,
+    deleteWorkflowFromCloud,
     wfUid,
 } from '@/lib/workflowEngine';
 import { logWorkflowRun, type WorkflowRunRecord, type StepRecord } from '@/lib/analyticsStore';
+import { supabase } from '@/integrations/supabase/client';
 
 // ─── State ───
 
@@ -266,7 +270,7 @@ const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined
 
 export function WorkflowProvider({ children }: { children: ReactNode }) {
     const [state, dispatch] = useReducer(workflowReducer, {
-        workflows: loadWorkflows(),
+        workflows: loadWorkflows(), // Start with localStorage (instant), cloud loads async
         activeWorkflowId: null,
         execution: null,
         planningStatus: 'idle',
@@ -278,6 +282,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     });
 
     const abortControllerRef = useRef<AbortController | null>(null);
+    const userIdRef = useRef<string | null>(null);
+    const cloudSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     // Use a ref to always have the latest workflows available in async callbacks
     const workflowsRef = useRef(state.workflows);
     workflowsRef.current = state.workflows;
@@ -290,6 +296,51 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         ? activeWorkflow.nodes.find(n => n.id === state.selectedNodeId) || null
         : null;
 
+    // ─── Load from cloud on mount ───
+    useEffect(() => {
+        let cancelled = false;
+        async function loadFromCloud() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (cancelled || !user) return;
+                userIdRef.current = user.id;
+
+                const cloudWorkflows = await loadWorkflowsFromCloud(user.id);
+                if (cancelled) return;
+
+                // Merge: cloud workflows take priority, keep any local-only ones
+                const merged = { ...loadWorkflows(), ...cloudWorkflows };
+                if (Object.keys(merged).length > 0) {
+                    dispatch({ type: 'SET_WORKFLOWS', workflows: merged });
+                    saveWorkflows(merged); // sync to localStorage too
+                }
+                console.log('[Workflow] Loaded', Object.keys(cloudWorkflows).length, 'from cloud');
+            } catch (err) {
+                console.warn('[Workflow] Cloud load failed:', err);
+            }
+        }
+        loadFromCloud();
+        return () => { cancelled = true; };
+    }, []);
+
+    // ─── Auto-save to cloud (debounced) ───
+    useEffect(() => {
+        if (!userIdRef.current) return;
+        if (cloudSaveTimerRef.current) clearTimeout(cloudSaveTimerRef.current);
+
+        const userId = userIdRef.current;
+        cloudSaveTimerRef.current = setTimeout(async () => {
+            // Save each workflow to cloud
+            for (const [id, wf] of Object.entries(state.workflows)) {
+                await saveWorkflowToCloud(userId, wf, id);
+            }
+        }, 2000); // 2s debounce
+
+        return () => {
+            if (cloudSaveTimerRef.current) clearTimeout(cloudSaveTimerRef.current);
+        };
+    }, [state.workflows]);
+
     // ─── Create Workflow from Goal ───
     const createWorkflow = useCallback(async (goal: string): Promise<WorkflowDefinition> => {
         dispatch({ type: 'SET_PLANNING_STATUS', status: 'planning' });
@@ -297,6 +348,17 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
             const definition = await planWorkflowAPI(goal);
             dispatch({ type: 'ADD_WORKFLOW', workflow: definition });
             dispatch({ type: 'SET_PLANNING_STATUS', status: 'idle' });
+
+            // Save to cloud immediately
+            if (userIdRef.current) {
+                const cloudId = await saveWorkflowToCloud(userIdRef.current, definition);
+                if (cloudId && cloudId !== definition.id) {
+                    // Update the local ID to match cloud UUID
+                    dispatch({ type: 'DELETE_WORKFLOW', id: definition.id });
+                    dispatch({ type: 'ADD_WORKFLOW', workflow: { ...definition, id: cloudId } });
+                }
+            }
+
             return definition;
         } catch (err: any) {
             dispatch({ type: 'SET_PLANNING_STATUS', status: 'error', error: err.message });
@@ -432,6 +494,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     // ─── Delete ───
     const deleteWorkflow = useCallback((id: string) => {
         dispatch({ type: 'DELETE_WORKFLOW', id });
+        // Also delete from cloud
+        if (userIdRef.current) {
+            deleteWorkflowFromCloud(userIdRef.current, id);
+        }
     }, []);
 
     // ─── Set Active ───

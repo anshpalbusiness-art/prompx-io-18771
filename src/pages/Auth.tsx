@@ -10,11 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { validateEmail, validatePassword, validateUsername } from "@/utils/validation";
 import { handleSupabaseError, showErrorToast } from "@/utils/errorHandling";
-import { userApi } from "@/utils/apiHelpers";
 import { Mail } from "lucide-react";
 import Starfield from "@/components/Starfield";
-
-// Removed z schema in favor of our validation utilities
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -125,23 +122,50 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      // Sign up with email_confirm disabled — our OTP already verified the email
+      const { data, error } = await supabase.auth.signUp({
         email: pendingSignupData.email,
         password: pendingSignupData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             username: pendingSignupData.username,
+            email_verified: true,
           },
         },
       });
 
       if (error) throw error;
 
-      toast({
-        title: "Success!",
-        description: "Your account has been created. You can now sign in.",
-      });
+      // If the user was created but email is not confirmed,
+      // try to sign them in immediately (works when Supabase
+      // "Confirm email" is disabled or auto-confirm is on)
+      if (data?.user && !data.session) {
+        // Attempt auto sign-in — this will work if email confirmation
+        // is disabled in Supabase Auth settings
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: pendingSignupData.email,
+          password: pendingSignupData.password,
+        });
+
+        if (signInError) {
+          // If sign-in fails due to "Email not confirmed", show a helpful message
+          if (signInError.message?.includes('Email not confirmed')) {
+            toast({
+              title: "Account created!",
+              description: "Please check your email for a confirmation link from Supabase, then sign in.",
+            });
+          } else {
+            throw signInError;
+          }
+        }
+      } else {
+        // Session was returned — user is auto-signed-in
+        toast({
+          title: "Welcome! 🎉",
+          description: "Your account has been created and you're signed in.",
+        });
+      }
 
       // Reset states
       setShowOTPVerification(false);
@@ -181,8 +205,30 @@ const Auth = () => {
         return;
       }
 
-      // Use API helper for sign in
-      await userApi.signIn(email, password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        // Better error messages
+        if (error.message?.includes('Email not confirmed')) {
+          toast({
+            title: "Email Not Verified",
+            description: "Check your inbox for a confirmation email from Supabase. Click the link to verify, then sign in again.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes('Invalid login credentials')) {
+          toast({
+            title: "Invalid Credentials",
+            description: "Wrong email or password. Double-check and try again.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
     } catch (error: any) {
       const appError = handleSupabaseError(error);
       showErrorToast(appError);
