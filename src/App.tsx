@@ -47,7 +47,6 @@ const AICopilotPage = lazy(() => import("./pages/AICopilot"));
 const Templates = lazy(() => import("./pages/Templates"));
 const History = lazy(() => import("./pages/History"));
 const Workflow = lazy(() => import("./pages/Workflow"));
-const LegalPacks = lazy(() => import("./pages/LegalPacks"));
 const ApiKeys = lazy(() => import("./pages/ApiKeys"));
 const Usage = lazy(() => import("./pages/Usage"));
 const CompliancePage = lazy(() => import("./pages/CompliancePage"));
@@ -99,7 +98,6 @@ const App = () => (
                       <Route path="/templates" element={<Templates />} />
                       <Route path="/history" element={<History />} />
                       <Route path="/workflow" element={<Workflow />} />
-                      <Route path="/legal-packs" element={<LegalPacks />} />
                       <Route path="/api-keys" element={<ApiKeys />} />
                       <Route path="/usage" element={<Usage />} />
                       <Route path="/compliance-dashboard" element={<CompliancePage />} />

@@ -4,9 +4,9 @@
 
 /** Model context window limits (in tokens) */
 export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
-    'grok-3': 131072,           // 128K
-    'grok-3-mini': 131072,      // 128K
-    'grok-3-mini-fast': 131072, // 128K
+    'grok-4-0709': 131072,           // 128K
+    'grok-4-0709-mini': 131072,      // 128K
+    'grok-4-0709-mini-fast': 131072, // 128K
     'grok-beta': 131072,        // 128K
     'gpt-4': 128000,            // 128K
     'gpt-4o': 128000,           // 128K

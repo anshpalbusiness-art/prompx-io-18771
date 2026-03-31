@@ -98,14 +98,14 @@ export class SessionMemory {
             content,
             timestamp: new Date().toISOString(),
         });
-        // Keep last 50 messages for context
-        if (this.state.chatContext.length > 50) {
-            this.state.chatContext = this.state.chatContext.slice(-50);
+        // Keep last 1000 messages for super strong context
+        if (this.state.chatContext.length > 1000) {
+            this.state.chatContext = this.state.chatContext.slice(-1000);
         }
         this.save();
     }
 
-    getChatContext(limit: number = 10): ChatContextEntry[] {
+    getChatContext(limit: number = 100): ChatContextEntry[] {
         return this.state.chatContext.slice(-limit);
     }
 
@@ -409,7 +409,7 @@ export class MemoryLearning {
     // Get memory context for AI prompts
     async getMemoryContext(): Promise<string> {
         const profile = await this.longTermMemory.getUserProfile();
-        const recentContext = this.sessionMemory.getChatContext(5);
+        const recentContext = this.sessionMemory.getChatContext(50);
 
         let context = '';
 

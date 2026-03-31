@@ -89,7 +89,6 @@ const toolsItems = [
   { name: 'Schedules', path: '/schedules', icon: CalendarClock },
   { name: 'History', path: '/history', icon: History },
   { name: 'Workflow', path: '/workflow', icon: WorkflowIcon },
-  { name: 'Legal Packs', path: '/legal-packs', icon: Scale },
 ];
 
 const settingsItems = [

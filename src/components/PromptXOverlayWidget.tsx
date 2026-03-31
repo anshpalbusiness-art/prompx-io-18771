@@ -250,9 +250,9 @@ export function PromptXOverlayWidget({ onClose }: PromptXOverlayWidgetProps) {
                             <span className="text-white/90 text-sm font-semibold tracking-tight">PromptX Overlay</span>
                             <div className="flex items-center gap-1.5">
                                 <div className={`w-1.5 h-1.5 rounded-full ${state === "enhancing" ? "bg-amber-400 animate-pulse" :
-                                        state === "ready" ? "bg-emerald-400" :
-                                            state === "error" ? "bg-red-400" :
-                                                "bg-white/30"
+                                    state === "ready" ? "bg-emerald-400" :
+                                        state === "error" ? "bg-red-400" :
+                                            "bg-white/30"
                                     }`} />
                                 <span className="text-[10px] text-white/40">
                                     {state === "enhancing" ? "Enhancing..." :
@@ -316,8 +316,8 @@ export function PromptXOverlayWidget({ onClose }: PromptXOverlayWidgetProps) {
                                         }
                                     }}
                                     className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg transition-all ${activeStyle === style.id
-                                            ? "bg-primary/15 border border-primary/30"
-                                            : "hover:bg-white/5 border border-transparent"
+                                        ? "bg-primary/15 border border-primary/30"
+                                        : "hover:bg-white/5 border border-transparent"
                                         }`}
                                 >
                                     <span className="text-base">{style.icon}</span>
@@ -353,7 +353,7 @@ export function PromptXOverlayWidget({ onClose }: PromptXOverlayWidgetProps) {
                         {state === "enhancing" && (
                             <div className="flex items-center gap-1.5">
                                 <Loader2 className="h-3 w-3 text-primary animate-spin" />
-                                <span className="text-[10px] text-primary/70">Enhancing with Grok...</span>
+                                <span className="text-[10px] text-primary/70">Enhancing with XionAi...</span>
                             </div>
                         )}
                     </div>
@@ -423,7 +423,7 @@ export function PromptXOverlayWidget({ onClose }: PromptXOverlayWidgetProps) {
                     className="px-4 py-2 flex items-center justify-between border-t"
                     style={{ borderColor: "rgba(255,255,255,0.04)" }}
                 >
-                    <span className="text-[9px] text-white/15">Powered by Grok · PromptX</span>
+                    <span className="text-[9px] text-white/15">Powered by XionAi · PromptX</span>
                     <div className="flex items-center gap-1">
                         {loadOverlaySettings().privacyMode && (
                             <span className="text-[9px] text-emerald-400/50 flex items-center gap-1">

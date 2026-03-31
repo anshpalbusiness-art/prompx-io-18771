@@ -34,7 +34,7 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
       // Load weekly leaderboard
       const { data: weeklyData } = await supabase
         .from("leaderboard")
-        .select("*, profiles(username)")
+        .select("*, profiles(username, email)")
         .eq("category", "weekly")
         .order("rank", { ascending: true })
         .limit(10);
@@ -42,7 +42,7 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
       // Load monthly leaderboard
       const { data: monthlyData } = await supabase
         .from("leaderboard")
-        .select("*, profiles(username)")
+        .select("*, profiles(username, email)")
         .eq("category", "monthly")
         .order("monthly_score", { ascending: false })
         .limit(10);
@@ -50,7 +50,7 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
       // Load all-time leaderboard
       const { data: allTimeData } = await supabase
         .from("leaderboard")
-        .select("*, profiles(username)")
+        .select("*, profiles(username, email)")
         .eq("category", "overall")
         .order("total_score", { ascending: false })
         .limit(10);
@@ -70,7 +70,7 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
     return data.map((entry, index) => ({
       rank: entry.rank || index + 1,
       user_id: entry.user_id,
-      username: entry.profiles?.username || "Anonymous",
+      username: entry.profiles?.username || entry.profiles?.email?.split('@')[0] || "Anonymous",
       weekly_score: entry.weekly_score || 0,
       monthly_score: entry.monthly_score || 0,
       total_score: entry.total_score || 0,
@@ -92,15 +92,14 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
 
   const renderLeaderboardList = (entries: LeaderboardEntry[], scoreType: "weekly" | "monthly" | "total") => {
     const scoreKey = scoreType === "weekly" ? "weekly_score" : scoreType === "monthly" ? "monthly_score" : "total_score";
-    
+
     return (
       <div className="space-y-3">
         {entries.map((entry) => (
           <Card
             key={entry.user_id}
-            className={`transition-all hover:shadow-lg ${
-              entry.user_id === userId ? "border-primary bg-primary/5" : ""
-            }`}
+            className={`transition-all hover:shadow-lg ${entry.user_id === userId ? "border-primary bg-primary/5" : ""
+              }`}
           >
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-4">
@@ -157,7 +156,7 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
               <TabsTrigger value="monthly">📆 Monthly</TabsTrigger>
               <TabsTrigger value="alltime">🌟 All Time</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="weekly" className="space-y-4 mt-6">
               {weeklyLeaders.length > 0 ? (
                 renderLeaderboardList(weeklyLeaders, "weekly")
@@ -167,7 +166,7 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
                 </p>
               )}
             </TabsContent>
-            
+
             <TabsContent value="monthly" className="space-y-4 mt-6">
               {monthlyLeaders.length > 0 ? (
                 renderLeaderboardList(monthlyLeaders, "monthly")
@@ -177,7 +176,7 @@ const Leaderboard = ({ userId }: LeaderboardProps) => {
                 </p>
               )}
             </TabsContent>
-            
+
             <TabsContent value="alltime" className="space-y-4 mt-6">
               {allTimeLeaders.length > 0 ? (
                 renderLeaderboardList(allTimeLeaders, "total")

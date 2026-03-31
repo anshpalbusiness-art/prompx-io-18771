@@ -40,7 +40,7 @@ serve(async (req) => {
 
     const languageName = languageNames[targetLanguage] || targetLanguage;
 
-    const systemPrompt = `You are an expert translator and cultural adaptation specialist for AI prompts. 
+    const systemPrompt = `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an expert translator and cultural adaptation specialist for AI prompts. 
 Your task is to translate the given prompt into ${languageName} while also adapting it for cultural context.
 
 Important guidelines:

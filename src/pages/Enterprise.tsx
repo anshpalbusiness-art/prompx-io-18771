@@ -20,13 +20,13 @@ const Enterprise = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { isOffline, offlineModeEnabled, toggleOfflineMode, isNetworkOffline } = useOfflineMode();
-  const [dataRetention, setDataRetention] = useState(() => 
+  const [dataRetention, setDataRetention] = useState(() =>
     localStorage.getItem('dataRetention') === 'true'
   );
-  const [auditLogging, setAuditLogging] = useState(() => 
+  const [auditLogging, setAuditLogging] = useState(() =>
     localStorage.getItem('auditLogging') === 'true'
   );
-  const [encryptionEnabled, setEncryptionEnabled] = useState(() => 
+  const [encryptionEnabled, setEncryptionEnabled] = useState(() =>
     localStorage.getItem('encryptionEnabled') === 'true'
   );
 
@@ -123,9 +123,9 @@ const Enterprise = () => {
                 <Shield className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 text-primary-foreground" />
               </div>
               <div className="flex-1 space-y-2 sm:space-y-3 md:space-y-4">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
-              Enterprise & Privacy
-            </h1>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
+                  Enterprise & Privacy
+                </h1>
                 <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground max-w-3xl leading-relaxed">
                   Privacy-first prompt engineering for regulated industries
                 </p>
@@ -152,39 +152,39 @@ const Enterprise = () => {
             )}
           </div>
 
-            <Tabs defaultValue="promptops" className="w-full space-y-6 sm:space-y-8">
-              <div className="flex justify-center overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-                <TabsList className="inline-flex h-11 sm:h-12 items-center justify-center rounded-xl bg-muted/50 p-1.5 text-muted-foreground backdrop-blur-sm border border-border/50">
-                  <TabsTrigger value="promptops" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
-                    <Activity className="w-4 h-4 mr-2" />
-                    PromptOps
-                  </TabsTrigger>
-                  <TabsTrigger value="offline" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
-                    Offline Mode
-                  </TabsTrigger>
-                  <TabsTrigger value="privacy" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
-                    Privacy Settings
-                  </TabsTrigger>
-                  <TabsTrigger value="compliance" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
-                    Compliance
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+          <Tabs defaultValue="promptops" className="w-full space-y-6 sm:space-y-8">
+            <div className="flex justify-center overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="inline-flex h-11 sm:h-12 items-center justify-center rounded-xl bg-muted/50 p-1.5 text-muted-foreground backdrop-blur-sm border border-border/50">
+                <TabsTrigger value="promptops" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
+                  <Activity className="w-4 h-4 mr-2" />
+                  PromptOps
+                </TabsTrigger>
+                <TabsTrigger value="offline" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
+                  Offline Mode
+                </TabsTrigger>
+                <TabsTrigger value="privacy" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
+                  Privacy Settings
+                </TabsTrigger>
+                <TabsTrigger value="compliance" className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base whitespace-nowrap">
+                  Compliance
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-              <TabsContent value="promptops" className="mt-0">
-                <PromptOpsDashboard userId={user?.id || ""} />
-              </TabsContent>
+            <TabsContent value="promptops" className="mt-0">
+              <PromptOpsDashboard userId={user?.id || ""} />
+            </TabsContent>
 
-              <TabsContent value="offline" className="mt-0 space-y-6">
-                <OfflinePromptGenerator />
-              </TabsContent>
+            <TabsContent value="offline" className="mt-0 space-y-6">
+              <OfflinePromptGenerator />
+            </TabsContent>
 
             <TabsContent value="privacy" className="mt-0 space-y-6">
               <Card className="p-5 sm:p-6 md:p-8 rounded-xl border border-border/50 shadow-lg">
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 sm:mb-8 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   Privacy Controls
                 </h2>
-                
+
                 <div className="space-y-4 sm:space-y-5">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-5 border border-border/50 rounded-xl hover:border-border transition-colors bg-card/30 gap-3 sm:gap-4">
                     <div className="space-y-1.5 sm:space-y-2 flex-1">
@@ -284,7 +284,7 @@ const Enterprise = () => {
                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 sm:mb-8 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   Compliance Standards
                 </h2>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
                   <Card className="p-5 sm:p-6 rounded-xl border-primary/30 bg-card/50 shadow-md hover:shadow-lg transition-shadow">
                     <h3 className="font-semibold text-base sm:text-lg md:text-xl mb-3 sm:mb-4">HIPAA Compliance</h3>
@@ -333,8 +333,8 @@ const Enterprise = () => {
 
                 <Card className="mt-6 sm:mt-8 p-4 sm:p-5 bg-primary/5 rounded-xl border border-primary/10">
                   <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Note:</strong> This offline/edge mode is designed for privacy-focused enterprises 
-                    in regulated industries. All processing happens on your device, ensuring complete data 
+                    <strong className="text-foreground">Note:</strong> This offline/edge mode is designed for privacy-focused enterprises
+                    in regulated industries. All processing happens on your device, ensuring complete data
                     sovereignty and compliance with the strictest regulations.
                   </p>
                 </Card>

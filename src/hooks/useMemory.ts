@@ -25,18 +25,18 @@ export function useSessionMemory() {
     const [recentInputs, setRecentInputs] = useState<string[]>([]);
 
     useEffect(() => {
-        setChatContext(sessionMemory.getChatContext(10));
-        setRecentInputs(sessionMemory.getRecentInputs(5));
+        setChatContext(sessionMemory.getChatContext(100));
+        setRecentInputs(sessionMemory.getRecentInputs(20));
     }, [sessionMemory]);
 
     const addChatMessage = useCallback((role: 'user' | 'assistant', content: string) => {
         sessionMemory.addChatMessage(role, content);
-        setChatContext(sessionMemory.getChatContext(10));
+        setChatContext(sessionMemory.getChatContext(100));
     }, [sessionMemory]);
 
     const addRecentInput = useCallback((input: string) => {
         sessionMemory.addRecentInput(input);
-        setRecentInputs(sessionMemory.getRecentInputs(5));
+        setRecentInputs(sessionMemory.getRecentInputs(20));
     }, [sessionMemory]);
 
     const clearChatContext = useCallback(() => {

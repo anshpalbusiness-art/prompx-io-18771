@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { User } from "@supabase/supabase-js";
 import { Search, TrendingUp, ShoppingCart, Star, Eye, Download, Plus, DollarSign, Tag, Heart, Share2, Filter, Sparkles, Crown, Flame, BarChart3, CheckCircle, Award, Copy } from "lucide-react";
 import SocialShare from "@/components/SocialShare";
+import { RegistrationAssistant } from "@/components/RegistrationAssistant";
+import { AIApplicationSelector } from "@/components/AIApplicationSelector";
 
 interface MarketplaceListing {
   id: string;
@@ -44,9 +46,11 @@ interface MarketplaceListing {
 
 interface PromptMarketplaceProps {
   user: User | null;
+  triggerCreate?: boolean;
+  onTriggerHandled?: () => void;
 }
 
-export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
+export const PromptMarketplace = ({ user, triggerCreate, onTriggerHandled }: PromptMarketplaceProps) => {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,6 +63,7 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [showAiSelector, setShowAiSelector] = useState(false);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
@@ -79,6 +84,13 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
   }, []);
 
   useEffect(() => {
+    if (triggerCreate) {
+      setShowCreateDialog(true);
+      onTriggerHandled?.();
+    }
+  }, [triggerCreate, onTriggerHandled]);
+
+  useEffect(() => {
     filterListings();
   }, [listings, searchQuery, selectedCategory, priceRange, minRating, sortBy, activeTab]);
 
@@ -88,6 +100,8 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
         .from("marketplace_listings")
         .select("*")
         .eq("is_active", true)
+        .neq("category", "cli")
+        .or("is_workflow.eq.false,is_workflow.is.null")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -96,7 +110,7 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
       const sellerIds = [...new Set(listingsData?.map(l => l.seller_id) || [])];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, email, avatar_url")
         .in("id", sellerIds);
 
       // Fetch ratings
@@ -129,10 +143,10 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
           ? listingRatings.reduce((sum, r) => sum + r.rating, 0) / listingRatings.length
           : 0;
         const purchases = purchaseData?.filter(p => p.listing_id === listing.id).length || 0;
-        
+
         return {
           ...listing,
-          seller_name: seller?.username || "Anonymous",
+          seller_name: seller?.username || seller?.email?.split('@')[0] || "Anonymous",
           seller_verified: purchases > 10,
           seller_avatar: seller?.avatar_url,
           rating: Math.round(avgRating * 10) / 10,
@@ -164,7 +178,7 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
         .select("metadata")
         .eq("user_id", user.id)
         .eq("activity_type", "favorite_listing");
-      
+
       const favIds = data?.map(d => {
         const metadata = d.metadata as any;
         return metadata?.listing_id;
@@ -389,180 +403,212 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
-            <ShoppingCart className="h-6 w-6 text-primary" />
+      {/* Removing Tabs from here as they are now in the parent. We just need a cool header if we want, or remove it as it's redundant. Actually, the header is redundant now that we have the parent title. Let's just remove the tabs and the redundant "Marketplace" text. */}
+
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-background/30 backdrop-blur-xl p-4 sm:p-6 rounded-3xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+          <div className="w-full sm:w-[320px] relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-md rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-300" />
+              <Input
+                placeholder="Search prompts, tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 h-12 bg-background/50 border-white/10 rounded-full focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:border-primary/50 text-base"
+              />
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold">Marketplace</h2>
-            <p className="text-sm text-muted-foreground">
-              {filteredListings.length} prompts • {listings.filter(l => l.is_featured).length} featured • {listings.filter(l => l.is_trending).length} trending
-            </p>
+
+          <div className="flex w-full sm:w-auto items-center gap-3">
+            {user && (
+              <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                <DialogTrigger asChild>
+                  <Button className="h-12 rounded-full px-6 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:shadow-[0_0_20px_rgba(var(--primary),0.4)] transition-all font-semibold">
+                    <Plus className="h-5 w-5" />
+                    <span className="hidden sm:inline">List Prompt</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-6xl w-[90vw] max-h-[90vh] overflow-hidden bg-zinc-950/90 backdrop-blur-3xl border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)] p-0 flex flex-col rounded-2xl sm:rounded-[32px]">
+                  <DialogHeader className="p-8 sm:px-10 border-b border-white/10 shrink-0 bg-gradient-to-b from-white/[0.05] to-transparent relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-transparent opacity-50"></div>
+                    <DialogTitle className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent relative z-10">List Your Prompt</DialogTitle>
+                    <DialogDescription className="text-white/60 text-base mt-2 relative z-10">
+                      Share your best prompts with the community and monetize your expertise.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="flex-1 overflow-hidden flex flex-col md:flex-row relative">
+                    {/* Left Side: Manual Form */}
+                    <div className="flex-1 p-8 sm:px-10 overflow-y-auto border-r border-white/10 bg-white/[0.02]">
+                      <div className="space-y-6 text-left max-w-3xl mx-auto">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-white/70 uppercase tracking-widest">Title *</Label>
+                          <Input
+                            value={newListing.title}
+                            onChange={(e) => setNewListing({ ...newListing, title: e.target.value })}
+                            placeholder="E.g., Advanced Marketing Campaign Generator"
+                            className="h-12 bg-white/[0.03] border-white/10 focus-visible:border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:bg-white/[0.05] rounded-xl text-base px-5 py-6 transition-all shadow-inner"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-white/70 uppercase tracking-widest">Description *</Label>
+                          <Textarea
+                            value={newListing.description}
+                            onChange={(e) => setNewListing({ ...newListing, description: e.target.value })}
+                            placeholder="Describe what makes your prompt unique and valuable..."
+                            rows={3}
+                            className="bg-white/[0.03] border-white/10 focus-visible:border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:bg-white/[0.05] rounded-xl text-base px-5 py-4 transition-all shadow-inner resize-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-white/70 uppercase tracking-widest">Category *</Label>
+                            <Select value={newListing.category} onValueChange={(value) => setNewListing({ ...newListing, category: value })}>
+                              <SelectTrigger className="h-14 bg-white/[0.03] border-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 rounded-xl px-5 transition-all shadow-inner">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-950/95 border-white/10 backdrop-blur-xl">
+                                <SelectItem value="marketing">Marketing</SelectItem>
+                                <SelectItem value="trading">Trading</SelectItem>
+                                <SelectItem value="coding">Coding</SelectItem>
+                                <SelectItem value="design">Design</SelectItem>
+                                <SelectItem value="content">Content</SelectItem>
+                                <SelectItem value="education">Education</SelectItem>
+                                <SelectItem value="business">Business</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-white/70 uppercase tracking-widest">Price (USD) *</Label>
+                            <div className="relative">
+                              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 font-medium">$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={newListing.price}
+                                onChange={(e) => setNewListing({ ...newListing, price: parseFloat(e.target.value) || 0 })}
+                                placeholder="9.99"
+                                className="h-14 bg-white/[0.03] border-white/10 focus-visible:border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:bg-white/[0.05] rounded-xl text-base pl-9 pr-5 transition-all shadow-inner"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-white/70 uppercase tracking-widest">Tags (comma-separated)</Label>
+                          <Input
+                            value={newListing.tags}
+                            onChange={(e) => setNewListing({ ...newListing, tags: e.target.value })}
+                            placeholder="marketing, social media, conversion"
+                            className="h-12 bg-white/[0.03] border-white/10 focus-visible:border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:bg-white/[0.05] rounded-xl text-base px-5 py-6 transition-all shadow-inner"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-white/70 uppercase tracking-widest flex items-center gap-2">
+                            Preview Content
+                            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full lowercase normal-case tracking-normal">Optional</span>
+                          </Label>
+                          <Textarea
+                            value={newListing.preview_content}
+                            onChange={(e) => setNewListing({ ...newListing, preview_content: e.target.value })}
+                            placeholder="A short preview that buyers can see before purchasing..."
+                            rows={2}
+                            className="bg-white/[0.03] border-white/10 focus-visible:border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:bg-white/[0.05] rounded-xl text-base px-5 py-4 transition-all shadow-inner resize-none font-mono text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-white/70 uppercase tracking-widest flex items-center gap-2">
+                            Full Prompt Content *
+                            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full lowercase normal-case tracking-normal">Core Logic</span>
+                          </Label>
+                          <Textarea
+                            value={newListing.prompt_content}
+                            onChange={(e) => setNewListing({ ...newListing, prompt_content: e.target.value })}
+                            placeholder="Your complete prompt (only visible after purchase)..."
+                            rows={6}
+                            className="bg-white/[0.03] border-white/10 focus-visible:border-primary/50 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:bg-white/[0.05] rounded-xl text-base px-5 py-4 transition-all shadow-inner font-mono text-sm leading-relaxed"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Side: AI Assistant */}
+                    <div className="w-full md:w-[420px] p-0 flex flex-col shrink-0 border-l border-white/10 bg-gradient-to-b from-black/60 to-black/90 relative z-10 shadow-[-20px_0_50px_-20px_rgba(0,0,0,0.5)]">
+                      <RegistrationAssistant
+                        itemType="Prompt"
+                        onSuggest={(suggest) => {
+                          setNewListing(prev => ({
+                            ...prev,
+                            title: suggest.title || suggest.template_name || prev.title,
+                            description: suggest.description || prev.description,
+                            price: suggest.price !== undefined ? suggest.price : prev.price,
+                            tags: suggest.tags || prev.tags,
+                            prompt_content: suggest.system_prompt || suggest.template_prompt || prev.prompt_content,
+                            category: suggest.category ? suggest.category.toLowerCase() : prev.category
+                          }));
+                        }}
+                        onAutoSubmit={createListing}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-6 sm:px-10 border-t border-white/10 shrink-0 bg-white/[0.02] backdrop-blur-md flex justify-end items-center">
+                    <span className="text-white/40 text-sm mr-auto hidden sm:block">All fields marked with * are required to list on the marketplace.</span>
+                    <Button
+                      className="w-full sm:w-auto px-10 h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-[0_0_30px_-5px_rgba(var(--primary),0.5)] hover:shadow-[0_0_40px_-5px_rgba(var(--primary),0.7)] transition-all"
+                      onClick={createListing}
+                      disabled={!newListing.title || !newListing.description || !newListing.prompt_content}
+                    >
+                      List Prompt
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-12 w-[160px] rounded-full bg-background/50 border-white/10 hover:border-white/20 transition-colors">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="popular">Most Popular</SelectItem>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant={showFilters ? "secondary" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              className="h-12 rounded-full px-5 gap-2 border-white/10 hover:border-white/20 transition-all"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Filters</span>
+            </Button>
           </div>
         </div>
-        {user && (
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                List Your Prompt
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>List Your Prompt</DialogTitle>
-                <DialogDescription>
-                  Share your best prompts with the community and earn
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Title *</Label>
-                  <Input
-                    value={newListing.title}
-                    onChange={(e) => setNewListing({ ...newListing, title: e.target.value })}
-                    placeholder="E.g., Advanced Marketing Campaign Generator"
-                  />
-                </div>
-                <div>
-                  <Label>Description *</Label>
-                  <Textarea
-                    value={newListing.description}
-                    onChange={(e) => setNewListing({ ...newListing, description: e.target.value })}
-                    placeholder="Describe what makes your prompt unique and valuable..."
-                    rows={3}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Category *</Label>
-                    <Select value={newListing.category} onValueChange={(value) => setNewListing({ ...newListing, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                        <SelectItem value="trading">Trading</SelectItem>
-                        <SelectItem value="coding">Coding</SelectItem>
-                        <SelectItem value="design">Design</SelectItem>
-                        <SelectItem value="content">Content</SelectItem>
-                        <SelectItem value="education">Education</SelectItem>
-                        <SelectItem value="business">Business</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Price (USD) *</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={newListing.price}
-                      onChange={(e) => setNewListing({ ...newListing, price: parseFloat(e.target.value) || 0 })}
-                      placeholder="9.99"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label>Tags (comma-separated)</Label>
-                  <Input
-                    value={newListing.tags}
-                    onChange={(e) => setNewListing({ ...newListing, tags: e.target.value })}
-                    placeholder="marketing, social media, conversion"
-                  />
-                </div>
-                <div>
-                  <Label>Preview Content</Label>
-                  <Textarea
-                    value={newListing.preview_content}
-                    onChange={(e) => setNewListing({ ...newListing, preview_content: e.target.value })}
-                    placeholder="A short preview that buyers can see before purchasing..."
-                    rows={2}
-                  />
-                </div>
-                <div>
-                  <Label>Full Prompt Content *</Label>
-                  <Textarea
-                    value={newListing.prompt_content}
-                    onChange={(e) => setNewListing({ ...newListing, prompt_content: e.target.value })}
-                    placeholder="Your complete prompt (only visible after purchase)..."
-                    rows={6}
-                  />
-                </div>
-                <Button onClick={createListing} className="w-full" size="lg">
-                  Create Listing
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full max-w-2xl bg-muted/50">
-          <TabsTrigger value="all" className="flex-1 gap-2">
-            <Sparkles className="h-4 w-4" />
-            All Prompts
-          </TabsTrigger>
-          <TabsTrigger value="featured" className="flex-1 gap-2">
-            <Crown className="h-4 w-4" />
-            Featured
-          </TabsTrigger>
-          <TabsTrigger value="trending" className="flex-1 gap-2">
-            <Flame className="h-4 w-4" />
-            Trending
-          </TabsTrigger>
-          {user && (
-            <TabsTrigger value="purchased" className="flex-1 gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Purchased
-            </TabsTrigger>
-          )}
-        </TabsList>
-      </Tabs>
+        <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mr-4">
+            <TabsList className="bg-background/40 backdrop-blur-md border border-white/10 rounded-full h-10 p-1">
+              <TabsTrigger value="all" className="rounded-full px-4 text-xs font-medium">All</TabsTrigger>
+              <TabsTrigger value="featured" className="rounded-full px-4 gap-1.5 text-xs font-medium"><Crown className="h-3 w-3" /> Featured</TabsTrigger>
+              <TabsTrigger value="trending" className="rounded-full px-4 gap-1.5 text-xs font-medium"><Flame className="h-3 w-3" /> Trending</TabsTrigger>
+              {user && <TabsTrigger value="purchased" className="rounded-full px-4 gap-1.5 text-xs font-medium"><CheckCircle className="h-3 w-3" /> Owned</TabsTrigger>}
+            </TabsList>
+          </Tabs>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search prompts, sellers, tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="popular">Most Popular</SelectItem>
-              <SelectItem value="rating">Highest Rated</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant={showFilters ? "default" : "outline"}
-            onClick={() => setShowFilters(!showFilters)}
-            className="gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-        </div>
+          <div className="h-10 w-px bg-white/10 hidden sm:block mx-1"></div>
 
-        <div className="flex flex-wrap gap-2">
           {["all", "marketing", "trading", "coding", "design", "content", "education", "business"].map((category) => (
             <Button
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedCategory(category)}
-              className="rounded-full"
+              className={`rounded-full h-10 px-5 text-sm transition-all duration-300 ${selectedCategory !== category ? 'border-white/10 bg-background/40 hover:bg-white/5 backdrop-blur-sm' : 'shadow-[0_0_15px_rgba(var(--primary),0.3)]'}`}
             >
               {category.charAt(0).toUpperCase() + category.slice(1)}
             </Button>
@@ -570,36 +616,39 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
         </div>
 
         {showFilters && (
-          <Card className="p-4 space-y-4 bg-muted/30">
-            <div className="space-y-2">
-              <Label className="flex items-center justify-between">
-                <span>Price Range: ${priceRange[0]} - ${priceRange[1]}</span>
-              </Label>
-              <Slider
-                value={priceRange}
-                onValueChange={(value) => setPriceRange(value as [number, number])}
-                min={0}
-                max={500}
-                step={10}
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Minimum Rating</Label>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3, 4, 5].map((rating) => (
-                  <Button
-                    key={rating}
-                    variant={minRating === rating ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setMinRating(rating)}
-                    className="gap-1"
-                  >
-                    <Star className={`h-3 w-3 ${rating <= minRating ? 'fill-current' : ''}`} />
-                    {rating > 0 && `${rating}+`}
-                    {rating === 0 && "All"}
-                  </Button>
-                ))}
+          <Card className="p-6 bg-background/40 backdrop-blur-2xl border-white/10 rounded-3xl animate-in fade-in slide-in-from-top-4 shadow-xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <Label className="flex items-center justify-between text-base font-semibold">
+                  <span>Price Range</span>
+                  <span className="text-primary">${priceRange[0]} - ${priceRange[1]}</span>
+                </Label>
+                <Slider
+                  value={priceRange}
+                  onValueChange={(value) => setPriceRange(value as [number, number])}
+                  min={0}
+                  max={500}
+                  step={10}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Minimum Rating</Label>
+                <div className="flex gap-2">
+                  {[0, 1, 2, 3, 4, 5].map((rating) => (
+                    <Button
+                      key={rating}
+                      variant={minRating === rating ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMinRating(rating)}
+                      className={`rounded-full flex-1 gap-1.5 transition-all ${minRating !== rating ? 'border-white/10 bg-background/50 hover:bg-white/5' : ''}`}
+                    >
+                      <Star className={`h-3.5 w-3.5 ${rating <= minRating ? 'fill-current' : ''}`} />
+                      {rating > 0 && `${rating}+`}
+                      {rating === 0 && "All"}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>
@@ -624,139 +673,146 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
             </CardContent>
           </Card>
         ) : (
-          filteredListings.map((listing) => (
-            <Card key={listing.id} className="group hover:shadow-xl transition-all duration-300 hover:border-primary/50 relative overflow-hidden">
-              {listing.is_featured && (
-                <div className="absolute top-2 left-2 z-10">
-                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white gap-1">
-                    <Crown className="h-3 w-3" />
-                    Featured
-                  </Badge>
-                </div>
-              )}
-              {listing.is_trending && (
-                <div className="absolute top-2 right-2 z-10">
-                  <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white gap-1">
-                    <Flame className="h-3 w-3" />
-                    Trending
-                  </Badge>
-                </div>
-              )}
+          filteredListings.map((listing, i) => (
+            <div
+              key={listing.id}
+              className="group relative animate-in fade-in slide-in-from-bottom-8 duration-700"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-primary/30 to-blue-500/30 rounded-[2rem] blur opacity-0 group-hover:opacity-100 transition duration-500 will-change-transform" />
+              <Card className="relative h-full bg-background/60 backdrop-blur-xl border-white/10 rounded-[2rem] overflow-hidden flex flex-col hover:border-primary/50 transition-colors duration-500">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-primary/20 transition-colors duration-500" />
 
-              <CardHeader className="space-y-3">
-                <div className="flex items-start justify-between gap-2 pt-8">
-                  <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
-                    {listing.title}
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => toggleFavorite(listing.id)}
-                  >
-                    <Heart className={`h-5 w-5 ${favorites.has(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
-                  </Button>
-                </div>
-                <CardDescription className="line-clamp-2">{listing.description}</CardDescription>
+                {listing.is_featured && (
+                  <div className="absolute top-4 left-4 z-10">
+                    <Badge className="bg-gradient-to-r from-yellow-500/90 to-orange-500/90 text-white gap-1 backdrop-blur-md border-0 shadow-lg px-3 py-1">
+                      <Crown className="h-3.5 w-3.5" />
+                      Featured
+                    </Badge>
+                  </div>
+                )}
+                {listing.is_trending && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-gradient-to-r from-red-500/90 to-pink-500/90 text-white gap-1 backdrop-blur-md border-0 shadow-lg px-3 py-1">
+                      <Flame className="h-3.5 w-3.5" />
+                      Trending
+                    </Badge>
+                  </div>
+                )}
 
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs">
-                      {listing.seller_name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    {listing.seller_name}
-                    {listing.seller_verified && (
-                      <CheckCircle className="h-3 w-3 text-blue-500" />
+                <CardHeader className="space-y-4 pt-14 px-6 relative z-10">
+                  <div className="flex items-start justify-between gap-4">
+                    <CardTitle className="text-xl leading-snug font-bold group-hover:text-primary transition-colors line-clamp-2">
+                      {listing.title}
+                    </CardTitle>
+                    {!listing.is_trending && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 -mt-2 -mr-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors rounded-full"
+                        onClick={() => toggleFavorite(listing.id)}
+                      >
+                        <Heart className={`h-5 w-5 ${favorites.has(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                      </Button>
                     )}
-                  </span>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-1.5">
-                  {listing.tags.slice(0, 4).map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs rounded-full">
-                      {tag}
-                    </Badge>
-                  ))}
-                  {listing.tags.length > 4 && (
-                    <Badge variant="outline" className="text-xs rounded-full">
-                      +{listing.tags.length - 4}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Eye className="h-3.5 w-3.5" />
-                      {listing.views}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Download className="h-3.5 w-3.5" />
-                      {listing.downloads}
-                    </div>
                   </div>
-                  {listing.rating && listing.rating > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{listing.rating.toFixed(1)}</span>
-                      <span className="text-muted-foreground">({listing.review_count})</span>
-                    </div>
-                  )}
-                </div>
+                  <CardDescription className="line-clamp-2 text-sm leading-relaxed">{listing.description}</CardDescription>
 
-                <div className="pt-3 border-t space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                      ${listing.price}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      {listing.category}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedListing(listing);
-                        setShowPreviewDialog(true);
-                      }}
-                      className="gap-1"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      Preview
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        incrementViews(listing.id);
-                        setSelectedListing(listing);
-                        setShowPurchaseDialog(true);
-                      }}
-                      disabled={listing.purchased}
-                      className="gap-1"
-                    >
-                      {listing.purchased ? (
-                        <>
-                          <CheckCircle className="h-3.5 w-3.5" />
-                          Owned
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                          Buy Now
-                        </>
+                  <div className="flex items-center gap-3 bg-white/5 p-2 rounded-2xl w-fit backdrop-blur-sm border border-white/5">
+                    <Avatar className="h-8 w-8 rounded-xl border border-white/10">
+                      <AvatarFallback className="text-xs bg-gradient-to-br from-primary/20 to-primary/5 font-semibold">
+                        {listing.seller_name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium flex items-center pr-2 gap-1.5">
+                      {listing.seller_name}
+                      {listing.seller_verified && (
+                        <CheckCircle className="h-3.5 w-3.5 text-blue-400" />
                       )}
-                    </Button>
+                    </span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardHeader>
+
+                <CardContent className="space-y-6 px-6 pb-6 flex-1 flex flex-col justify-end relative z-10">
+                  <div className="flex flex-wrap gap-2 mt-auto pt-4">
+                    {listing.tags.slice(0, 3).map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs rounded-lg px-2.5 py-1 bg-white/5 border-white/10 font-medium">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {listing.tags.length > 3 && (
+                      <Badge variant="outline" className="text-xs rounded-lg px-2.5 py-1 border-white/10 text-muted-foreground">
+                        +{listing.tags.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm py-4 border-y border-white/5">
+                    <div className="flex items-center gap-4 text-muted-foreground font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <Eye className="h-4 w-4 text-primary/70" />
+                        {listing.views}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Download className="h-4 w-4 text-primary/70" />
+                        {listing.downloads}
+                      </div>
+                    </div>
+                    {listing.rating && listing.rating > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-bold text-foreground">{listing.rating.toFixed(1)}</span>
+                        <span className="text-muted-foreground text-xs">({listing.review_count})</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4 pt-2">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Price</span>
+                      <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                        ${listing.price}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="rounded-2xl h-11 w-11 bg-white/5 hover:bg-white/10 border border-white/10"
+                        onClick={() => {
+                          setSelectedListing(listing);
+                          setShowPreviewDialog(true);
+                        }}
+                      >
+                        <Eye className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        className="rounded-2xl h-11 px-6 font-bold shadow-[0_0_20px_rgba(var(--primary),0.2)] hover:shadow-[0_0_30px_rgba(var(--primary),0.4)] transition-shadow"
+                        onClick={() => {
+                          incrementViews(listing.id);
+                          setSelectedListing(listing);
+                          setShowPurchaseDialog(true);
+                        }}
+                        disabled={listing.purchased}
+                      >
+                        {listing.purchased ? (
+                          <>
+                            <CheckCircle className="h-5 w-5 mr-2" />
+                            Owned
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="h-5 w-5 mr-2" />
+                            Buy
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           ))
         )}
       </div>
@@ -789,7 +845,9 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
                       <CheckCircle className="h-4 w-4 text-blue-500" />
                     )}
                   </p>
-                  <p className="text-sm text-muted-foreground">Verified Seller</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedListing?.seller_verified ? "Verified Seller" : "Seller"}
+                  </p>
                 </div>
               </div>
               <div className="text-right">
@@ -800,14 +858,13 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
 
             <div className="space-y-2">
               <Label>Prompt Preview</Label>
-              <div className="p-4 bg-muted/30 rounded-lg border">
-                <p className="text-sm whitespace-pre-wrap">
-                  {selectedListing?.preview_content || selectedListing?.prompt_content?.substring(0, 200) + "..."}
+              <div className="p-4 bg-muted/30 rounded-lg border font-mono text-sm max-h-60 overflow-y-auto">
+                <p className="whitespace-pre-wrap">
+                  {selectedListing?.purchased || (selectedListing?.price === 0)
+                    ? selectedListing?.prompt_content
+                    : "🔒 Full prompt content is hidden. \n\nPurchase this prompt to unlock the complete text."}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Full prompt available after purchase
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -839,26 +896,38 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-4 border-t mt-6 border-white/10">
               <Button
                 variant="outline"
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 h-12"
                 onClick={() => toggleFavorite(selectedListing?.id || "")}
               >
                 <Heart className={`h-4 w-4 ${favorites.has(selectedListing?.id || "") ? 'fill-red-500 text-red-500' : ''}`} />
                 {favorites.has(selectedListing?.id || "") ? "Saved" : "Save"}
               </Button>
-              <Button
-                className="flex-1 gap-2"
-                onClick={() => {
-                  setShowPreviewDialog(false);
-                  setShowPurchaseDialog(true);
-                }}
-                disabled={selectedListing?.purchased}
-              >
-                <ShoppingCart className="h-4 w-4" />
-                {selectedListing?.purchased ? "Already Owned" : `Buy for $${selectedListing?.price}`}
-              </Button>
+              {selectedListing?.purchased ? (
+                <Button
+                  className="flex-[2] gap-2 bg-white text-black hover:bg-zinc-200 transition-all font-sans font-bold text-base h-12"
+                  onClick={() => {
+                    setShowPreviewDialog(false);
+                    setShowAiSelector(true);
+                  }}
+                >
+                  <Sparkles className="h-5 w-5" />
+                  Use Prompt
+                </Button>
+              ) : (
+                <Button
+                  className="flex-[2] gap-2 font-bold text-base h-12 bg-gradient-to-r from-primary to-primary/80 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] transition-shadow text-white"
+                  onClick={() => {
+                    setShowPreviewDialog(false);
+                    setShowPurchaseDialog(true);
+                  }}
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Buy for ${selectedListing?.price}
+                </Button>
+              )}
             </div>
 
             <div className="pt-4 border-t">
@@ -945,6 +1014,13 @@ export const PromptMarketplace = ({ user }: PromptMarketplaceProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AI Selector Dialog */}
+      <AIApplicationSelector
+        open={showAiSelector}
+        onOpenChange={setShowAiSelector}
+        promptContent={selectedListing?.prompt_content || ""}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { toast } from "sonner";
 import {
     Shield,
     Zap,
@@ -170,6 +171,25 @@ export function MobileOverlay() {
         saveOverlaySettings({ [key]: value });
     };
 
+    const handleActivate = () => {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (!isMobile) {
+            toast.error("Device Not Supported", {
+                description: "Mobile Overlay is only available on Android and iOS devices."
+            });
+            return;
+        }
+        activate();
+    };
+
+    const handleToggle = (checked: boolean) => {
+        if (checked) {
+            handleActivate();
+        } else {
+            deactivate();
+        }
+    };
+
     return (
         <div className="space-y-8">
             {/* ─── Hero Section ─── */}
@@ -196,7 +216,7 @@ export function MobileOverlay() {
                             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed max-w-lg">
                                 A Grammarly-style floating overlay built right into PromptX.
                                 Activate it, type or paste any prompt, and get an AI-enhanced version
-                                in seconds — powered by Grok for 5–10× better responses.
+                                in seconds — powered by XionAi for 5–10× better responses.
                             </p>
                         </div>
 
@@ -213,7 +233,7 @@ export function MobileOverlay() {
                         <div className="flex gap-3">
                             {!isActive ? (
                                 <Button
-                                    onClick={activate}
+                                    onClick={handleActivate}
                                     size="lg"
                                     className="gap-2.5 px-8 py-6 text-base font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-primary to-primary/80"
                                 >
@@ -260,7 +280,7 @@ export function MobileOverlay() {
                     {SUPPORTED_APPS.map(app => (
                         <Card key={app.name} className="border-border/30 bg-muted/20 hover:bg-muted/40 transition-all duration-300 group cursor-default">
                             <CardContent className="flex items-center gap-3 p-4">
-                                <span className="text-2xl">{app.icon}</span>
+                                <img src={app.icon} alt={app.name} className="h-8 w-8 object-contain" />
                                 <div>
                                     <p className="text-sm font-semibold text-foreground">{app.name}</p>
                                     <p className="text-[10px] text-muted-foreground">Copy & enhance</p>
@@ -340,7 +360,7 @@ export function MobileOverlay() {
                                 </div>
                                 <Switch
                                     checked={isActive}
-                                    onCheckedChange={toggle}
+                                    onCheckedChange={handleToggle}
                                 />
                             </div>
 
@@ -398,7 +418,7 @@ export function MobileOverlay() {
                                     { step: '1', text: 'Click "Activate Overlay" above or toggle the switch on', icon: <Power className="h-3.5 w-3.5" /> },
                                     { step: '2', text: 'A floating PromptX widget appears on your screen', icon: <Sparkles className="h-3.5 w-3.5" /> },
                                     { step: '3', text: 'Type or paste any prompt into the widget', icon: <Keyboard className="h-3.5 w-3.5" /> },
-                                    { step: '4', text: 'Wait 3 seconds — Grok enhances it automatically', icon: <Timer className="h-3.5 w-3.5" /> },
+                                    { step: '4', text: 'Wait 3 seconds — XionAi enhances it automatically', icon: <Timer className="h-3.5 w-3.5" /> },
                                     { step: '5', text: 'Click "Copy Enhanced" to use in any AI app', icon: <Copy className="h-3.5 w-3.5" /> },
                                 ].map(item => (
                                     <div key={item.step} className="flex items-start gap-3">
@@ -415,7 +435,7 @@ export function MobileOverlay() {
 
                             {!isActive && (
                                 <Button
-                                    onClick={activate}
+                                    onClick={handleActivate}
                                     className="w-full mt-4 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
                                     size="sm"
                                 >
@@ -444,7 +464,7 @@ export function MobileOverlay() {
                         {[
                             { icon: <Power className="h-6 w-6" />, title: 'Activate', desc: 'Turn on the overlay from the settings or the big activate button' },
                             { icon: <Keyboard className="h-6 w-6" />, title: 'Paste or Type', desc: 'Enter any prompt into the floating widget' },
-                            { icon: <Sparkles className="h-6 w-6" />, title: 'Enhance', desc: '3-second pause triggers AI enhancement via Grok' },
+                            { icon: <Sparkles className="h-6 w-6" />, title: 'Enhance', desc: '3-second pause triggers AI enhancement via XionAi' },
                             { icon: <Copy className="h-6 w-6" />, title: 'Copy & Use', desc: 'One click to copy the enhanced prompt to clipboard' },
                         ].map((step, i) => (
                             <div key={i} className="text-center space-y-2">

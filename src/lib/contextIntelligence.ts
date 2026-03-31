@@ -157,7 +157,7 @@ function buildDigest(session: ChatSession): ConversationDigest {
 export function buildContextIntelligence(
     currentChatId: string | null,
     currentMessages: Array<{ role: string; content: string }>,
-    maxPreviousChats: number = 5
+    maxPreviousChats: number = 20
 ): ContextIntelligenceResult {
     // Get all previous chat sessions
     const allSessions = chatStorage.getAllSessions();

@@ -18,7 +18,7 @@ function node(
         name,
         description: desc,
         icon,
-        systemPrompt: `You are a specialized AI agent: ${name}. ${desc}`,
+        systemPrompt: `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are a specialized AI agent: ${name}. ${desc}`,
         capabilities,
         status: 'idle',
         input: {},

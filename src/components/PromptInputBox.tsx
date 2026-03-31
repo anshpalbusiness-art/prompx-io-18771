@@ -1,9 +1,15 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Zap, BrainCircuit, ChevronDown, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Embedded CSS for minimal custom styles
 const styles = `
@@ -29,7 +35,9 @@ const styles = `
 // Inject styles into document
 const styleSheet = document.createElement("style");
 styleSheet.innerText = styles;
-document.head.appendChild(styleSheet);
+if (typeof document !== 'undefined') {
+    document.head.appendChild(styleSheet);
+}
 
 // Textarea Component
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -159,14 +167,10 @@ Button.displayName = "Button";
 // VoiceRecorder Component
 interface VoiceRecorderProps {
     isRecording: boolean;
-    onStartRecording: () => void;
-    onStopRecording: (duration: number) => void;
     visualizerBars?: number;
 }
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     isRecording,
-    onStartRecording,
-    onStopRecording,
     visualizerBars = 32,
 }) => {
     const [time, setTime] = React.useState(0);
@@ -174,20 +178,18 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
     React.useEffect(() => {
         if (isRecording) {
-            onStartRecording();
             timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
         } else {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
-            onStopRecording(time);
             setTime(0);
         }
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [isRecording, time, onStartRecording, onStopRecording]);
+    }, [isRecording]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -204,13 +206,13 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         >
             <div className="flex items-center gap-2 mb-3">
                 <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="font-mono text-sm text-white/80">{formatTime(time)}</span>
+                <span className="font-mono text-sm text-zinc-700 dark:text-zinc-300">{formatTime(time)}</span>
             </div>
             <div className="w-full h-10 flex items-center justify-center gap-0.5 px-4">
                 {[...Array(visualizerBars)].map((_, i) => (
                     <div
                         key={i}
-                        className="w-0.5 rounded-full bg-white/50 animate-pulse"
+                        className="w-0.5 rounded-full bg-zinc-400 dark:bg-zinc-500 animate-pulse"
                         style={{
                             height: `${Math.max(15, Math.random() * 100)}%`,
                             animationDelay: `${i * 0.05}s`,
@@ -438,9 +440,11 @@ interface PromptInputBoxProps {
     isLoading?: boolean;
     placeholder?: string;
     className?: string;
+    researchMode?: 'fast' | 'deep';
+    onResearchModeChange?: (mode: 'fast' | 'deep') => void;
 }
 export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
-    const { onSend = () => { }, isLoading = false, placeholder = "Type your message here...", className } = props;
+    const { onSend = () => { }, isLoading = false, placeholder = "Type your message here...", className, researchMode = 'fast', onResearchModeChange } = props;
     const [input, setInput] = React.useState("");
     const [files, setFiles] = React.useState<File[]>([]);
     const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
@@ -635,8 +639,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 {isRecording && (
                     <VoiceRecorder
                         isRecording={isRecording}
-                        onStartRecording={handleStartRecording}
-                        onStopRecording={handleStopRecording}
                     />
                 )}
 
@@ -666,6 +668,56 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                                 />
                             </button>
                         </PromptInputAction>
+
+                        {/* Research Mode Toggle (Fast vs Deep) */}
+                        <div className="relative group/toggle flex items-center">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        className="flex h-7 items-center justify-center gap-1.5 rounded-full px-2.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                                    >
+                                        {researchMode === 'fast' ? (
+                                            <>
+                                                <Zap className="h-3.5 w-3.5" />
+                                                <span className="text-[11px] font-medium hidden sm:inline-block">Fast</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <BrainCircuit className="h-3.5 w-3.5" />
+                                                <span className="text-[11px] font-medium hidden sm:inline-block">Deep Research</span>
+                                            </>
+                                        )}
+                                        <ChevronDown className="h-3 w-3 opacity-50 ml-0.5" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 bg-[#1F2023] border-[#333333] text-zinc-100 p-1 rounded-xl shadow-xl z-50">
+                                    <DropdownMenuItem
+                                        onClick={() => onResearchModeChange?.('fast')}
+                                        className={cn(
+                                            "flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                                            researchMode === 'fast' ? "bg-zinc-800" : "hover:bg-zinc-800/50"
+                                        )}
+                                    >
+                                        <Zap className="h-4 w-4 text-zinc-400" />
+                                        <div className="flex flex-col flex-1 pl-1">
+                                            <span className="font-medium text-xs">Fast</span>
+                                            <span className="text-[10px] text-zinc-500">Quick insights & writing</span>
+                                        </div>
+                                        {researchMode === 'fast' && <Check className="h-3.5 w-3.5 text-zinc-400" />}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        disabled
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg opacity-50 cursor-not-allowed text-sm"
+                                    >
+                                        <BrainCircuit className="h-4 w-4 text-zinc-400" />
+                                        <div className="flex flex-col flex-1 pl-1">
+                                            <span className="font-medium text-xs">Deep Research</span>
+                                            <span className="text-[10px] text-zinc-500 font-medium">Coming Soon</span>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
 
                     <PromptInputAction
@@ -691,9 +743,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                                         : "bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
                             )}
                             onClick={() => {
-                                if (isRecording) setIsRecording(false);
+                                if (isRecording) handleStopRecording();
                                 else if (hasContent) handleSubmit();
-                                else setIsRecording(true);
+                                else handleStartRecording();
                             }}
                             disabled={isLoading && !hasContent}
                         >

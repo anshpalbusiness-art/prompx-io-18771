@@ -2,7 +2,7 @@ import * as React from "react";
 
 interface ChatbotLoaderProps {
     size?: number;
-    text?: string;
+    text?: React.ReactNode;
 }
 
 export const ChatbotLoader: React.FC<ChatbotLoaderProps> = ({

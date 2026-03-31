@@ -51,7 +51,7 @@ serve(async (req) => {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
+            const textData = await response.text(); console.error("xAI error raw:", textData); const errorData = { error: textData };
             console.error('xAI API error:', errorData);
             return new Response(
                 JSON.stringify({ error: errorData.error || 'API request failed' }),

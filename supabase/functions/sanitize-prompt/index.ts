@@ -59,7 +59,7 @@ Respond ONLY with valid JSON, no other text.`;
       body: JSON.stringify({
         model: 'grok-2-1212',
         messages: [
-          { role: 'system', content: 'You are a prompt safety expert. Always respond with valid JSON only.' },
+          { role: 'system', content: 'You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are a prompt safety expert. Always respond with valid JSON only.' },
           { role: 'user', content: sanitizationPrompt }
         ],
         temperature: 0.3,

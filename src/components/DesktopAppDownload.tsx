@@ -82,18 +82,18 @@ const CopyCommand = ({ command }: { command: string }) => {
     };
 
     return (
-        <div className="mt-2 flex items-center gap-2 bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 font-mono text-sm">
-            <Terminal className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-            <code className="text-emerald-300 flex-1 overflow-x-auto">{command}</code>
+        <div className="mt-2 flex items-center gap-2 bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/10 rounded-lg px-4 py-2.5 font-mono text-sm">
+            <Terminal className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <code className="text-zinc-600 dark:text-emerald-300 flex-1 overflow-x-auto">{command}</code>
             <button
                 onClick={handleCopy}
-                className="p-1.5 rounded-md hover:bg-white/10 transition-colors shrink-0"
+                className="p-1.5 rounded-md hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors shrink-0"
                 title="Copy command"
             >
                 {copied ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 ) : (
-                    <Copy className="h-3.5 w-3.5 text-white/50 hover:text-white/80" />
+                    <Copy className="h-3.5 w-3.5 text-zinc-400 hover:text-zinc-600 dark:text-white/50 dark:hover:text-white/80" />
                 )}
             </button>
         </div>
@@ -175,7 +175,7 @@ export const DesktopAppDownload = () => {
                             <Button
                                 size="lg"
                                 variant="outline"
-                                className="gap-3 border-white/20 text-white hover:bg-white/10 font-medium px-6 py-6 text-base"
+                                className="gap-3 border-gray-400 bg-white/80 dark:border-white/20 text-gray-900 dark:text-white hover:bg-white dark:hover:bg-white/10 font-medium px-6 py-6 text-base dark:bg-transparent backdrop-blur-sm"
                                 disabled
                             >
                                 <Monitor className="h-5 w-5" />
@@ -184,14 +184,14 @@ export const DesktopAppDownload = () => {
                         </div>
 
                         {/* System requirements */}
-                        <div className="flex items-center gap-4 text-sm text-blue-200/50 justify-center lg:justify-start flex-wrap">
+                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-blue-200/50 justify-center lg:justify-start flex-wrap font-medium dark:font-normal">
                             <span className="flex items-center gap-1.5">
                                 <Apple className="h-3.5 w-3.5" />
                                 Apple Silicon (M1–M4)
                             </span>
-                            <span>•</span>
+                            <span className="text-gray-400 dark:text-white/20">•</span>
                             <span>macOS 12+</span>
-                            <span>•</span>
+                            <span className="text-gray-400 dark:text-white/20">•</span>
                             <span>~100 MB</span>
                         </div>
                     </div>
@@ -266,7 +266,7 @@ export const DesktopAppDownload = () => {
                                     {i + 1}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-muted-foreground leading-relaxed">{step.text}</p>
+                                    <p className="text-sm text-zinc-700 dark:text-muted-foreground leading-relaxed font-medium dark:font-normal">{step.text}</p>
                                     {step.command && <CopyCommand command={step.command} />}
                                 </div>
                             </div>
@@ -274,24 +274,24 @@ export const DesktopAppDownload = () => {
                     </div>
 
                     {/* Why xattr note */}
-                    <div className="mt-6 p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                        <p className="text-sm text-amber-400/80 flex items-start gap-2">
+                    <div className="mt-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20">
+                        <p className="text-sm text-amber-800 dark:text-amber-400/80 flex items-start gap-2 h-auto w-auto p-1 leading-relaxed">
                             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                            <span><strong>Why the Terminal commands?</strong> PromptX is not code-signed with an Apple Developer certificate yet. The <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs">xattr -cr</code> command removes macOS's download quarantine flag. This is standard for open-source Mac apps and only needs to be done once.</span>
+                            <span><strong className="text-amber-900 dark:text-amber-300">Why the Terminal commands?</strong> PromptX is not code-signed with an Apple Developer certificate yet. The <code className="bg-amber-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono text-amber-900 dark:text-amber-200">xattr -cr</code> command removes macOS's download quarantine flag. This is standard for open-source Mac apps and only needs to be done once.</span>
                         </p>
                     </div>
 
-                    <div className="mt-4 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                        <p className="text-sm text-emerald-400/80 flex items-center gap-2">
+                    <div className="mt-4 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20">
+                        <p className="text-sm text-emerald-800 dark:text-emerald-400/80 flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4 shrink-0" />
-                            <span>After initial setup, PromptX opens normally from Applications. You can also set it to launch at login from the menu bar icon.</span>
+                            <span className="leading-relaxed">After initial setup, PromptX opens normally from Applications. You can also set it to launch at login from the menu bar icon.</span>
                         </p>
                     </div>
                 </CardContent>
             </Card>
 
             {/* Supported Apps */}
-            <Card className="border-border/50 bg-muted/10">
+            <Card className="border-border/50 bg-muted/10 shadow-sm">
                 <CardContent className="p-6 sm:p-8">
                     <h3 className="text-lg font-semibold text-foreground mb-5 flex items-center gap-2">
                         <Shield className="h-5 w-5 text-primary" />
@@ -299,14 +299,14 @@ export const DesktopAppDownload = () => {
                     </h3>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {supportedApps.map((group) => (
-                            <div key={group.category} className="p-4 rounded-xl bg-background/50 border border-border/30">
+                            <div key={group.category} className="p-4 rounded-xl shadow-sm bg-white dark:bg-background/50 border border-zinc-200 dark:border-border/30">
                                 <div className="flex items-center gap-2 mb-3">
                                     <group.icon className="h-4 w-4 text-primary" />
                                     <h4 className="text-sm font-semibold text-foreground">{group.category}</h4>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                     {group.apps.map((appName) => (
-                                        <Badge key={appName} variant="secondary" className="text-xs font-medium px-2.5 py-1">
+                                        <Badge key={appName} variant="secondary" className="text-xs font-medium px-2.5 py-1 bg-zinc-100 dark:bg-secondary text-zinc-700 dark:text-secondary-foreground">
                                             {appName}
                                         </Badge>
                                     ))}
@@ -314,7 +314,7 @@ export const DesktopAppDownload = () => {
                             </div>
                         ))}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-4 text-center">
+                    <p className="text-xs text-zinc-500 dark:text-muted-foreground mt-4 text-center">
                         PromptX works in any app that accepts text input. The apps above have context-aware prompt enhancements.
                     </p>
                 </CardContent>

@@ -40,6 +40,7 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
   const [conversationId, setConversationId] = useState<string>("");
   const [isSaved, setIsSaved] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [totalTokens, setTotalTokens] = useState(0);
   const [avgResponseTime, setAvgResponseTime] = useState(0);
@@ -116,8 +117,8 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
 
       let promptToUse = userMessage;
 
-      // Prepare conversation history (limit to last 10 messages for context window)
-      const conversationHistory = messages.slice(-10).map(msg => ({
+      // Prepare full conversation history for maximum context window/memory
+      const conversationHistory = messages.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
@@ -196,6 +197,30 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      setUploadedFiles(prev => [...prev, ...files]);
+      toast({
+        title: "Files added via drag & drop",
+        description: `${files.length} file(s) ready to process`,
+      });
+    }
+  };
+
   const handleCopy = async (content: string, index: number) => {
     await navigator.clipboard.writeText(content);
     setCopied(index);
@@ -267,7 +292,12 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
   };
 
   return (
-    <div className="flex flex-col h-[700px]">
+    <div
+      className={`flex flex-col h-[700px] transition-colors ${isDragging ? 'ring-2 ring-primary ring-inset bg-primary/5' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Enhanced Header with Stats */}
       <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
         <div className="flex items-center justify-between mb-2">
@@ -371,8 +401,8 @@ const AgentChatEnhanced = ({ agent, userId }: AgentChatEnhancedProps) => {
               <Card
                 key={index}
                 className={`p-4 group relative ${message.role === 'user'
-                    ? 'bg-primary/10 ml-auto max-w-[80%]'
-                    : 'bg-muted max-w-[80%]'
+                  ? 'bg-primary/10 ml-auto max-w-[80%]'
+                  : 'bg-muted max-w-[80%]'
                   }`}
               >
                 <div className="flex gap-3">

@@ -112,7 +112,7 @@ Provide a JSON response with:
       },
       body: JSON.stringify({
         messages: [
-          { role: 'system', content: 'You are a compliance and bias detection expert. Analyze prompts for potential issues and provide structured feedback.' },
+          { role: 'system', content: 'You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are a compliance and bias detection expert. Analyze prompts for potential issues and provide structured feedback.' },
           { role: 'user', content: aiAnalysisPrompt }
         ],
         model: 'google/gemini-2.5-flash'

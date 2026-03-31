@@ -80,7 +80,7 @@ serve(async (req) => {
     };
 
     // Build super intelligent optimization prompt with advanced techniques
-    const optimizationPrompt = `You are an elite AI prompt optimization system with deep expertise in:
+    const optimizationPrompt = `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an elite AI prompt optimization system with deep expertise in:
 - Behavioral psychology & persuasion frameworks (Cialdini's principles, FOMO, social proof)
 - Neuromarketing & cognitive biases (anchoring, scarcity, authority)
 - Viral content mechanics & platform algorithms
@@ -274,7 +274,7 @@ You learn from feedback and continuously improve. You MUST return valid JSON onl
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             messages: [
-              { role: 'system', content: 'You are an expert copywriter specializing in high-converting, viral content. Return ONLY the optimized text, no explanations.' },
+              { role: 'system', content: 'You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an expert copywriter specializing in high-converting, viral content. Return ONLY the optimized text, no explanations.' },
               { role: 'user', content: strategy.prompt }
             ],
             temperature: 0.85,

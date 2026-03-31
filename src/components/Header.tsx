@@ -105,7 +105,6 @@ export const Header = ({ user }: HeaderProps) => {
     { name: 'Templates', path: '/templates', icon: FileText, category: 'Tools' },
     { name: 'History', path: '/history', icon: History, category: 'Tools' },
     { name: 'Workflow', path: '/workflow', icon: WorkflowIcon, category: 'Tools' },
-    { name: 'Legal Packs', path: '/legal-packs', icon: Scale, category: 'Tools' },
     { name: 'API Keys', path: '/api-keys', icon: Key, category: 'Settings' },
     { name: 'Usage', path: '/usage', icon: BarChart3, category: 'Settings' },
     { name: 'Compliance', path: '/compliance-dashboard', icon: ShieldCheck, category: 'Settings' },

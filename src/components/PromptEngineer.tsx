@@ -39,7 +39,7 @@ const detectLanguage = async (text: string): Promise<string> => {
   try {
     const { franc } = await import('franc');
     const detectedLang = franc(text);
-    
+
     // Map franc language codes to common names
     const langMap: { [key: string]: string } = {
       'eng': 'English', 'spa': 'Spanish', 'fra': 'French', 'deu': 'German', 'ita': 'Italian',
@@ -54,7 +54,7 @@ const detectLanguage = async (text: string): Promise<string> => {
       'afr': 'Afrikaans', 'amh': 'Amharic', 'hau': 'Hausa', 'ibo': 'Igbo', 'yor': 'Yoruba',
       'swa': 'Swahili', 'som': 'Somali', 'orm': 'Oromo', 'tir': 'Tigrinya', 'zul': 'Zulu'
     };
-    
+
     return langMap[detectedLang] || 'Unknown';
   } catch (error) {
     return 'English';
@@ -67,46 +67,46 @@ const AI_MODELS = [
   { id: 'gpt-4.1', name: 'GPT-4.1', icon: MessageSquare, description: 'Advanced reasoning', category: 'text', provider: 'OpenAI' },
   { id: 'gpt-4o', name: 'GPT-4o', icon: MessageSquare, description: 'Multimodal flagship', category: 'text', provider: 'OpenAI' },
   { id: 'o4-mini', name: 'O4-Mini', icon: Brain, description: 'Fast reasoning model', category: 'text', provider: 'OpenAI' },
-  
+
   // Text Models - Anthropic
   { id: 'claude-opus-4', name: 'Claude Opus 4', icon: Brain, description: 'Highest intelligence', category: 'text', provider: 'Anthropic' },
   { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', icon: Brain, description: 'Balanced performance', category: 'text', provider: 'Anthropic' },
   { id: 'claude-haiku-3.5', name: 'Claude Haiku 3.5', icon: Zap, description: 'Fastest responses', category: 'text', provider: 'Anthropic' },
-  
+
   // Text Models - Google
   { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', icon: Sparkles, description: 'Google flagship model', category: 'text', provider: 'Google' },
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', icon: Sparkles, description: 'Fast & efficient', category: 'text', provider: 'Google' },
   { id: 'gemini-ultra', name: 'Gemini Ultra', icon: Stars, description: 'Most capable Google AI', category: 'text', provider: 'Google' },
-  
+
   // Text Models - Meta
   { id: 'llama-3.3', name: 'LLaMA 3.3', icon: Code, description: 'Meta open-source', category: 'text', provider: 'Meta' },
   { id: 'llama-3.1-405b', name: 'LLaMA 3.1 405B', icon: Code, description: 'Largest open model', category: 'text', provider: 'Meta' },
-  
+
   // Text Models - Mistral
   { id: 'mistral-large-2', name: 'Mistral Large 2', icon: Target, description: 'European frontier model', category: 'text', provider: 'Mistral' },
   { id: 'mistral-medium', name: 'Mistral Medium', icon: Target, description: 'Balanced European AI', category: 'text', provider: 'Mistral' },
-  
+
   // Text Models - xAI
   { id: 'grok-2', name: 'Grok 2', icon: Zap, description: 'Real-time insights', category: 'text', provider: 'xAI' },
-  
+
   // Text Models - Lovable
   { id: 'lovable-gemini-pro', name: 'Lovable Gemini Pro', icon: Sparkles, description: 'Lovable AI - Most capable', category: 'text', provider: 'Lovable' },
   { id: 'lovable-gemini-flash', name: 'Lovable Gemini Flash', icon: Zap, description: 'Lovable AI - Fast & balanced', category: 'text', provider: 'Lovable' },
   { id: 'lovable-gpt5', name: 'Lovable GPT-5', icon: Stars, description: 'Lovable AI - Premium model', category: 'text', provider: 'Lovable' },
-  
+
   // Image Models
   { id: 'midjourney-v6', name: 'MidJourney v6', icon: Palette, description: 'Photorealistic art', category: 'image', provider: 'MidJourney' },
   { id: 'dalle-3', name: 'DALL-E 3', icon: Image, description: 'OpenAI image creation', category: 'image', provider: 'OpenAI' },
   { id: 'stable-diffusion-xl', name: 'Stable Diffusion XL', icon: Wand2, description: 'Open-source images', category: 'image', provider: 'Stability' },
   { id: 'flux-pro', name: 'Flux Pro', icon: Sparkles, description: 'High-quality generation', category: 'image', provider: 'Black Forest Labs' },
-  
+
   // Code Models
   { id: 'github-copilot', name: 'GitHub Copilot', icon: Code, description: 'AI pair programmer', category: 'code', provider: 'GitHub' },
   { id: 'cursor-ai', name: 'Cursor AI', icon: Target, description: 'AI code editor', category: 'code', provider: 'Cursor' },
   { id: 'codestral', name: 'Codestral', icon: Code, description: 'Mistral code model', category: 'code', provider: 'Mistral' },
-  
+
   // Audio/Video Models
-  { id: 'elevenlabs', name: 'ElevenLabs', icon: Mic, description: 'Voice synthesis', category: 'audio', provider: 'ElevenLabs' },
+  { id: 'elevenlabs', name: 'xAI TTS', icon: Mic, description: 'Voice synthesis', category: 'audio', provider: 'xAI' },
   { id: 'sora', name: 'Sora', icon: Stars, description: 'OpenAI video', category: 'video', provider: 'OpenAI' },
   { id: 'runway-gen3', name: 'Runway Gen-3', icon: Video, description: 'Video generation', category: 'video', provider: 'Runway' },
 ];
@@ -144,7 +144,7 @@ export const PromptEngineer = () => {
   const [isExecutingWorkflow, setIsExecutingWorkflow] = useState(false);
   const [workflowResults, setWorkflowResults] = useState<WorkflowResult[]>([]);
   const [workflowProgress, setWorkflowProgress] = useState<StepProgress[]>([]);
-  
+
   // Voice and language features
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
@@ -192,12 +192,12 @@ export const PromptEngineer = () => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
-      
+
       // Configure for maximum language detection
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.maxAlternatives = 5;
-      
+
       // Get supported languages
       const languages = [
         'en-US', 'es-ES', 'fr-FR', 'de-DE', 'it-IT', 'pt-BR', 'ru-RU', 'ja-JP', 'ko-KR', 'zh-CN',
@@ -208,23 +208,23 @@ export const PromptEngineer = () => {
         'sw-KE', 'so-SO', 'om-ET', 'ti-ET', 'zu-ZA'
       ];
       setSupportedLanguages(languages);
-      
+
       recognitionRef.current.onstart = () => {
         setIsListening(true);
         setIsRecording(true);
       };
-      
+
       recognitionRef.current.onresult = async (event: any) => {
         let finalTranscript = '';
         let interimText = '';
         let maxConfidence = 0;
-        
+
         // Build complete transcript from all results
         for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
           const transcript = result[0].transcript;
           const currentConfidence = result[0].confidence || 0;
-          
+
           if (result.isFinal) {
             finalTranscript += transcript + ' ';
             maxConfidence = Math.max(maxConfidence, currentConfidence);
@@ -232,30 +232,30 @@ export const PromptEngineer = () => {
             interimText += transcript;
           }
         }
-        
+
         // Always show interim results for immediate feedback
         setInterimTranscript(interimText);
-        
+
         // Update confidence level
         if (maxConfidence > 0) {
           setConfidence(Math.round(maxConfidence * 100));
         }
-        
+
         // When we have final text, update the textarea immediately
         if (finalTranscript.trim()) {
           const newText = (voiceTranscript + finalTranscript).trim();
-          
+
           console.log('Voice input - Final transcript:', newText);
-          
+
           // CRITICAL: Update textarea immediately so user sees their text
           setUserInput(newText);
           setVoiceTranscript(newText);
           setInterimTranscript('');
-          
+
           // Detect language in the background (don't wait for it)
           detectLanguage(newText).then(language => {
             setDetectedLanguage(language);
-            
+
             toast({
               title: `✅ Voice Input Captured! (${language})`,
               description: maxConfidence > 0 ? `${Math.round(maxConfidence * 100)}% confidence` : 'Processing...',
@@ -269,16 +269,16 @@ export const PromptEngineer = () => {
           });
         }
       };
-      
+
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error, event);
         setIsRecording(false);
         setIsListening(false);
         setIsProcessingVoice(false);
         stopAudioVisualization();
-        
+
         let errorMessage = "Please try again or check microphone permissions";
-        
+
         // Handle specific error types
         if (event.error === 'no-speech') {
           errorMessage = "No speech detected. Please try speaking again.";
@@ -292,21 +292,21 @@ export const PromptEngineer = () => {
           // User stopped recording - this is normal, don't show error
           return;
         }
-        
+
         toast({
           title: "Voice Input Error",
           description: errorMessage,
           variant: "destructive",
         });
       };
-      
+
       recognitionRef.current.onend = () => {
         console.log('Speech recognition ended');
         setIsRecording(false);
         setIsListening(false);
         setInterimTranscript('');
         stopAudioVisualization();
-        
+
         // If there's text in voiceTranscript, make sure it's in the textarea
         if (voiceTranscript.trim()) {
           console.log('Final voice transcript:', voiceTranscript);
@@ -314,7 +314,7 @@ export const PromptEngineer = () => {
         }
       };
     }
-    
+
     return () => {
       stopAudioVisualization();
     };
@@ -346,20 +346,20 @@ export const PromptEngineer = () => {
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
       analyserRef.current.fftSize = 256;
-      
+
       const bufferLength = analyserRef.current.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      
+
       const updateAudioLevel = () => {
         if (!analyserRef.current) return;
-        
+
         analyserRef.current.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / bufferLength;
         setAudioLevel(Math.min(100, Math.round(average / 2.55)));
-        
+
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
       };
-      
+
       updateAudioLevel();
     } catch (error) {
       console.error('Audio visualization error:', error);
@@ -388,17 +388,17 @@ export const PromptEngineer = () => {
       });
       return;
     }
-    
+
     console.log('Starting voice input...');
-    
+
     try {
       // Check if getUserMedia is supported (important for mobile)
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('getUserMedia not supported on this device');
       }
-      
+
       // Request microphone permission with mobile-optimized settings
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
@@ -406,28 +406,28 @@ export const PromptEngineer = () => {
           // Mobile-specific optimizations
           channelCount: 1,
           sampleRate: 16000
-        } 
+        }
       });
-      
+
       console.log('Microphone access granted');
       await startAudioVisualization(stream);
-      
+
       // Use browser language or default to English
       const browserLang = navigator.language || 'en-US';
       recognitionRef.current.lang = browserLang;
-      
+
       console.log('Speech recognition language:', browserLang);
-      
+
       // Clear all previous state for a fresh start
       setVoiceTranscript('');
       setInterimTranscript('');
       setDetectedLanguage('');
       setConfidence(0);
-      
+
       // Start recognition
       recognitionRef.current.start();
       console.log('Speech recognition started');
-      
+
       toast({
         title: "🎤 Listening...",
         description: "Speak clearly into your device microphone",
@@ -435,9 +435,9 @@ export const PromptEngineer = () => {
     } catch (error: any) {
       console.error('Voice input error:', error);
       stopAudioVisualization();
-      
+
       let errorMessage = "Please allow microphone access in your browser settings";
-      
+
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         errorMessage = "Microphone permission denied. Please allow access and try again.";
       } else if (error.name === 'NotFoundError') {
@@ -445,7 +445,7 @@ export const PromptEngineer = () => {
       } else if (error.message.includes('not supported')) {
         errorMessage = "Voice input is not supported on this device. Try using Chrome on Android or Safari on iOS.";
       }
-      
+
       toast({
         title: "Microphone Error",
         description: errorMessage,
@@ -462,14 +462,14 @@ export const PromptEngineer = () => {
   };
 
   const detectUserIntent = (input: string): {
-    intent: string; 
-    domain: string; 
-    style: string; 
+    intent: string;
+    domain: string;
+    style: string;
     confidence: number;
     context: string[];
   } => {
     const lower = input.toLowerCase();
-    
+
     // Intent patterns
     const intentPatterns = {
       create: /\b(create|make|build|generate|produce|design|craft)\b/i,
@@ -530,26 +530,26 @@ export const PromptEngineer = () => {
   const performAdvancedSpellCheck = (text: string): { corrected: string; spellCorrections: string[] } => {
     const corrections: string[] = [];
     let corrected = text;
-    
+
     // Comprehensive spell check dictionary with 150+ common mistakes
     const spellCheckDict: Record<string, string> = {
       // Basic typos
       'teh': 'the', 'adn': 'and', 'ot': 'to', 'fo': 'of', 'hte': 'the', 'nad': 'and',
       'taht': 'that', 'wich': 'which', 'waht': 'what', 'whe': 'when', 'wiht': 'with',
       'thier': 'their', 'recive': 'receive', 'youre': "you're", 'becuase': 'because',
-      
+
       // IE/EI confusion
       'recieve': 'receive', 'beleive': 'believe', 'acheive': 'achieve', 'freind': 'friend',
       'peice': 'piece', 'sheild': 'shield', 'wierd': 'weird', 'neice': 'niece',
       'breif': 'brief', 'cheif': 'chief', 'feild': 'field', 'greif': 'grief',
-      
+
       // Double/single letter errors
       'occured': 'occurred', 'begining': 'beginning', 'comming': 'coming', 'runing': 'running',
       'geting': 'getting', 'puting': 'putting', 'planing': 'planning', 'stoping': 'stopping',
       'droping': 'dropping', 'shiping': 'shipping', 'writting': 'writing', 'admited': 'admitted',
       'commited': 'committed', 'controled': 'controlled', 'occuring': 'occurring',
       'transfered': 'transferred', 'prefered': 'preferred', 'refered': 'referred',
-      
+
       // Common word confusion
       'seperate': 'separate', 'definate': 'definite', 'definately': 'definitely',
       'neccessary': 'necessary', 'occurence': 'occurrence',
@@ -557,7 +557,7 @@ export const PromptEngineer = () => {
       'athiest': 'atheist', 'concious': 'conscious', 'embarass': 'embarrass',
       'existance': 'existence', 'persistant': 'persistent', 'resistence': 'resistance',
       'tendancy': 'tendency', 'succesful': 'successful', 'ocasionally': 'occasionally',
-      
+
       // Business & professional terms
       'accomodate': 'accommodate', 'buisness': 'business', 'bussiness': 'business',
       'calender': 'calendar', 'collegue': 'colleague', 'concensus': 'consensus',
@@ -570,7 +570,7 @@ export const PromptEngineer = () => {
       'publically': 'publicly', 'reccomend': 'recommend', 'recomend': 'recommend',
       'relevent': 'relevant', 'religous': 'religious', 'supercede': 'supersede',
       'managment': 'management', 'oppurtunity': 'opportunity', 'experiance': 'experience',
-      
+
       // Technical terms
       'algoritm': 'algorithm', 'databse': 'database', 'progam': 'program',
       'programing': 'programming', 'sofware': 'software', 'hardward': 'hardware',
@@ -586,14 +586,14 @@ export const PromptEngineer = () => {
       'visable': 'visible', 'implmentation': 'implementation', 'anaylsis': 'analysis',
       'requirment': 'requirement', 'devlopment': 'development', 'efficency': 'efficiency',
       'strategey': 'strategy', 'finacial': 'financial',
-      
+
       // Common chat/internet mistakes
       'alot': 'a lot', 'everytime': 'every time', 'aswell': 'as well', 'incase': 'in case',
       'alittle': 'a little', 'anyways': 'anyway', 'cant': "can't", 'dont': "don't",
       'wont': "won't", 'isnt': "isn't", 'arent': "aren't", 'doesnt': "doesn't",
       'didnt': "didn't", 'shouldnt': "shouldn't", 'wouldnt': "wouldn't",
       'hasnt': "hasn't", 'havent': "haven't", 'wasnt': "wasn't", 'werent': "weren't",
-      
+
       // Adjectives & adverbs
       'accidently': 'accidentally', 'basicly': 'basically', 'completly': 'completely',
       'extreamly': 'extremely', 'finaly': 'finally', 'generaly': 'generally',
@@ -602,13 +602,13 @@ export const PromptEngineer = () => {
       'seperately': 'separately', 'similiar': 'similar', 'usualy': 'usually',
       'usefull': 'useful', 'beautifull': 'beautiful', 'carefull': 'careful',
       'faithfull': 'faithful', 'gratefull': 'grateful', 'hopefull': 'hopeful',
-      
+
       // Others
       'tommorow': 'tomorrow', 'tomorow': 'tomorrow', 'truely': 'truly', 'wether': 'whether',
       'explaination': 'explanation', 'thru': 'through', 'nite': 'night',
       'lite': 'light', 'grammer': 'grammar', 'harrass': 'harass', 'cemetary': 'cemetery'
     };
-    
+
     // Apply spell corrections with detailed tracking
     const spellingErrors: string[] = [];
     Object.entries(spellCheckDict).forEach(([wrong, correct]) => {
@@ -618,29 +618,29 @@ export const PromptEngineer = () => {
         spellingErrors.push(`'${wrong}' → '${correct}'`);
       }
     });
-    
+
     if (spellingErrors.length > 0) {
       corrections.push(`Fixed spelling: ${spellingErrors.slice(0, 3).join(', ')}${spellingErrors.length > 3 ? ` (+${spellingErrors.length - 3} more)` : ''}`);
     }
-    
+
     // Grammar corrections
     const grammarIssues: string[] = [];
     const originalGrammar = corrected;
-    
+
     // Fix double spaces and formatting
     corrected = corrected.replace(/\s+/g, ' ').trim();
-    
+
     // Capitalization: Start of sentence
     corrected = corrected.replace(/^([a-z])/, (match) => match.toUpperCase());
     corrected = corrected.replace(/([.!?]\s+)([a-z])/g, (match, p1, p2) => p1 + p2.toUpperCase());
-    
+
     // Punctuation fixes
     corrected = corrected.replace(/\s*([.!?,;:])/g, '$1'); // Remove space before punctuation
     corrected = corrected.replace(/([.!?])([A-Z])/g, '$1 $2'); // Add space after sentence-ending punctuation
     corrected = corrected.replace(/([,;:])(\S)/g, '$1 $2'); // Add space after commas, semicolons, colons
     corrected = corrected.replace(/\.{2,}/g, '.'); // Remove multiple periods (except ellipsis)
     corrected = corrected.replace(/([!?]){2,}/g, '$1'); // Remove repeated punctuation
-    
+
     // Common grammar mistakes
     const grammarFixes = [
       { from: /\bi is\b/gi, to: 'I am', issue: 'subject-verb agreement' },
@@ -659,31 +659,31 @@ export const PromptEngineer = () => {
       { from: /\ba hour\b/gi, to: 'an hour', issue: 'a/an article' },
       { from: /\ba unique\b/gi, to: 'a unique', issue: 'a/an article' },
     ];
-    
+
     grammarFixes.forEach(({ from, to, issue }) => {
       if (from.test(corrected)) {
         corrected = corrected.replace(from, to);
         grammarIssues.push(issue);
       }
     });
-    
+
     // Check for missing punctuation at end
     if (corrected.length > 10 && !/[.!?]$/.test(corrected)) {
       corrected = corrected + '.';
       grammarIssues.push('added end punctuation');
     }
-    
+
     if (grammarIssues.length > 0) {
       corrections.push(`Grammar fixes: ${grammarIssues.slice(0, 2).join(', ')}${grammarIssues.length > 2 ? ` (+${grammarIssues.length - 2} more)` : ''}`);
     }
-    
+
     // Add space between camelCase for readability
     corrected = corrected.replace(/([a-z])([A-Z])/g, '$1 $2');
-    
+
     if (originalGrammar !== corrected && grammarIssues.length === 0 && spellingErrors.length === 0) {
       corrections.push("Improved text formatting");
     }
-    
+
     return { corrected, spellCorrections: corrections };
   };
 
@@ -758,19 +758,19 @@ export const PromptEngineer = () => {
       { from: /\bwon't\b/gi, to: 'will not', desc: 'Used formal contractions' },
       { from: /\bisn't\b/gi, to: 'is not', desc: 'Used formal contractions' },
       { from: /\baren't\b/gi, to: 'are not', desc: 'Used formal contractions' },
-      
+
       // Vague to specific language
       { from: /\bstuff\b/gi, to: 'content', desc: 'Used specific terminology' },
       { from: /\bthings\b/gi, to: 'elements', desc: 'Used specific terminology' },
       { from: /\ba lot of\b/gi, to: 'numerous', desc: 'Used professional language' },
       { from: /\bpretty good\b/gi, to: 'effective', desc: 'Used professional language' },
       { from: /\breally\s+(\w+)/gi, to: 'highly $1', desc: 'Enhanced professional tone' },
-      
+
       // Uncertainty to confidence
       { from: /\bi think\b/gi, to: 'I believe', desc: 'Enhanced confidence' },
       { from: /\bmaybe\b/gi, to: 'potentially', desc: 'Used professional language' },
       { from: /\bkind of\b/gi, to: 'somewhat', desc: 'Used professional language' },
-      
+
       // Add professional action verbs
       { from: /\bmake\s+(\w+)/gi, to: 'develop $1', desc: 'Used professional action verbs' },
       { from: /\bshow\s+me\b/gi, to: 'demonstrate', desc: 'Used professional language' },
@@ -807,7 +807,7 @@ export const PromptEngineer = () => {
             parts.push(`- ${trimmed.charAt(0).toUpperCase() + trimmed.slice(1)}`);
           }
         });
-        
+
         if (parts.length > 1) {
           optimized = `Please help with the following:\n\n${parts.join('\n')}`;
           improvements.push("Restructured into clear bullet points");
@@ -851,7 +851,7 @@ export const PromptEngineer = () => {
 
     // Detect user intent and context
     const analysis = detectUserIntent(enhanced);
-    
+
     // Phase 1: Basic language fixes
     if (enhanced[0] !== enhanced[0].toUpperCase()) {
       enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
@@ -871,7 +871,7 @@ export const PromptEngineer = () => {
         enhanced = corrected;
         improvements.push(...spellCorrections.map(correction => `Fixed: ${correction}`));
       }
-      
+
       // Additional manual corrections for common mistakes
       const manualCorrections = [
         { from: /\bi\b/g, to: 'I', desc: 'Capitalized "I"' },
@@ -910,7 +910,7 @@ export const PromptEngineer = () => {
         { from: /\bincase\b/gi, to: 'in case', desc: 'Fixed spacing' },
         { from: /\baswell\b/gi, to: 'as well', desc: 'Fixed spacing' }
       ];
-      
+
       let hasManualFixes = false;
       manualCorrections.forEach(fix => {
         if (fix.from.test(enhanced)) {
@@ -960,7 +960,7 @@ export const PromptEngineer = () => {
       { from: /\bcouldnt\b/gi, to: 'couldn\'t', desc: 'Added apostrophe in contraction' },
       { from: /\bshouldnt\b/gi, to: 'shouldn\'t', desc: 'Added apostrophe in contraction' },
       { from: /\bwouldnt\b/gi, to: 'wouldn\'t', desc: 'Added apostrophe in contraction' },
-      
+
       // Informal to formal/professional
       { from: /\bkinda\b/gi, to: 'somewhat', desc: 'Made more professional' },
       { from: /\bgonna\b/gi, to: 'going to', desc: 'Made more formal' },
@@ -970,7 +970,7 @@ export const PromptEngineer = () => {
       { from: /\btn\b/g, to: 'than', desc: 'Fixed abbreviation' },
       { from: /\bw\/\b/g, to: 'with', desc: 'Expanded abbreviation' },
       { from: /\b&\b/g, to: 'and', desc: 'Expanded symbol' },
-      
+
       // Clarity improvements
       { from: /\bstuff\b/gi, to: 'content', desc: 'Made more specific' },
       { from: /\bthings\b/gi, to: 'elements', desc: 'Made more specific' },
@@ -1005,7 +1005,7 @@ export const PromptEngineer = () => {
         learn: 'Create a learning guide about',
         convert: 'Convert and transform'
       };
-      
+
       enhanced = `${intentMap[analysis.intent as keyof typeof intentMap] || 'Create'} ${enhanced.replace(/^(create|make|build|generate|improve|explain|analyze|plan|solve|learn|convert)\s*/i, '')}`;
       improvements.push("Expanded brief request with smart context");
     }
@@ -1192,11 +1192,11 @@ export const PromptEngineer = () => {
 
   const generatePrompts = async () => {
     const modelsToOptimize = compareMode ? selectedModels : (selectedTool ? [selectedTool] : []);
-    
+
     if (!userInput.trim() || modelsToOptimize.length === 0) {
       toast({
         title: "Missing Information",
-        description: compareMode 
+        description: compareMode
           ? "Please enter your prompt and select at least one model to compare"
           : "Please enter your prompt and select an AI model",
         variant: "destructive",
@@ -1214,20 +1214,20 @@ export const PromptEngineer = () => {
     setIsEnhancing(true);
     setShowResults(false);
     setInputEnhancements([]);
-    
+
     try {
       // Phase 1: Enhance the user input
       await new Promise(resolve => setTimeout(resolve, 800));
       let enhancedText = userInput;
-      
+
       // Enhance with user preferences if available
       if (userPreferences) {
         enhancedText = `[Profile: ${userPreferences.niche} | ${userPreferences.style} tone | ${userPreferences.preferred_tone}]\n\n${userInput}`;
       }
-      
+
       const { enhanced, improvements } = await enhanceUserInput(enhancedText);
       setEnhancedInput(enhanced);
-      
+
       // Add model orchestration info
       const orchestrationInfo = [
         ...improvements,
@@ -1237,7 +1237,7 @@ export const PromptEngineer = () => {
           return model ? `• ${model.name} (${model.provider})` : '';
         }).filter(Boolean)
       ];
-      
+
       // Add translation info if applicable
       if (selectedLanguage !== 'en') {
         const languageNames: Record<string, string> = {
@@ -1247,7 +1247,7 @@ export const PromptEngineer = () => {
         };
         orchestrationInfo.push(`🌍 Translation: ${languageNames[selectedLanguage] || selectedLanguage} with cultural adaptation`);
       }
-      
+
       setInputEnhancements(orchestrationInfo);
       setIsEnhancing(false);
 
@@ -1258,10 +1258,10 @@ export const PromptEngineer = () => {
         });
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
-      
+
       // Phase 2: Generate model-specific optimized prompts
       const allPrompts: any[] = [];
-      
+
       for (const modelId of modelsToOptimize) {
         const model = AI_MODELS.find(m => m.id === modelId);
         if (!model) continue;
@@ -1280,35 +1280,35 @@ export const PromptEngineer = () => {
             provider: model.provider
           }
         ];
-        
+
         // Enhanced validation and quality control on frontend
         const validPrompts = generatedPrompts.filter((p: any) => {
           if (!p || typeof p !== 'object') {
             console.warn('Invalid prompt object:', p);
             return false;
           }
-          
+
           if (typeof p.title !== 'string' || typeof p.prompt !== 'string') {
             console.warn('Prompt missing title or prompt string:', p);
             return false;
           }
-          
+
           // Quality check: Ensure prompts are substantial (at least 30 characters)
           if (p.prompt.trim().length < 30) {
             console.warn('Prompt too short:', p);
             return false;
           }
-          
+
           // Quality check: Ensure prompts contain the user's core intent
           const userWords = enhanced.toLowerCase().split(/\s+/).filter(w => w.length > 3);
           const promptWords = p.prompt.toLowerCase();
           const hasRelevantContent = userWords.some(word => promptWords.includes(word));
-          
+
           if (!hasRelevantContent && !p.prompt.includes(enhanced.substring(0, 50))) {
             console.warn('Prompt may be off-topic:', p);
             return false;
           }
-          
+
           // Check for nested JSON
           try {
             const parsed = JSON.parse(p.prompt);
@@ -1319,10 +1319,10 @@ export const PromptEngineer = () => {
           } catch {
             // Good - prompt is a regular string
           }
-          
+
           return true;
         });
-        
+
         // If quality control filtered out all prompts, show error
         if (validPrompts.length === 0 && generatedPrompts.length > 0) {
           console.error('All generated prompts failed quality checks:', generatedPrompts);
@@ -1331,7 +1331,7 @@ export const PromptEngineer = () => {
             description: `Generated prompts for ${model.name} didn't meet quality standards. Trying again...`,
             variant: "destructive",
           });
-          
+
           // Retry with a simpler approach
           const fallbackPrompts = [
             {
@@ -1346,7 +1346,7 @@ export const PromptEngineer = () => {
           allPrompts.push(...fallbackPrompts);
           continue;
         }
-        
+
         // Add model metadata to each prompt
         const modelPrompts = validPrompts.map((p: any) => ({
           ...p,
@@ -1356,7 +1356,7 @@ export const PromptEngineer = () => {
           provider: model.provider,
           category: model.category
         }));
-        
+
         allPrompts.push(...modelPrompts);
       }
 
@@ -1387,10 +1387,10 @@ export const PromptEngineer = () => {
             translatedPrompts.push(prompt);
           }
         }
-        
+
         finalPrompts = translatedPrompts;
         setIsTranslating(false);
-        
+
         const successfulTranslations = translatedPrompts.filter(p => p.translatedTo).length;
         if (successfulTranslations > 0) {
           toast({
@@ -1403,12 +1403,12 @@ export const PromptEngineer = () => {
       setOptimizedPrompts(finalPrompts);
       setIsGenerating(false);
       setShowResults(true);
-      
+
       // Track usage after successful generation
       if (user && !planAccess.hasProPlan()) {
         await promptLimit.trackUsage();
       }
-      
+
       // Save to history (first prompt only)
       if (user && finalPrompts.length > 0) {
         await supabase.from('prompt_history').insert({
@@ -1428,11 +1428,11 @@ export const PromptEngineer = () => {
       setIsGenerating(false);
       setIsEnhancing(false);
       setIsTranslating(false);
-      
+
       // Provide helpful error messages
       let errorMessage = "Failed to generate prompts. Please try again.";
       let errorTitle = "Generation Failed";
-      
+
       if (error instanceof Error) {
         if (error.message.includes('rate limit') || error.message.includes('429')) {
           errorTitle = "Rate Limit Exceeded";
@@ -1447,7 +1447,7 @@ export const PromptEngineer = () => {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
@@ -1485,17 +1485,17 @@ export const PromptEngineer = () => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
   };
 
   const handleFiles = async (files: File[]) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     // Store files
     setUploadedFiles(prev => [...prev, ...files]);
-    
+
     // Create image previews
     for (const file of imageFiles) {
       const reader = new FileReader();
@@ -1506,17 +1506,17 @@ export const PromptEngineer = () => {
       };
       reader.readAsDataURL(file);
     }
-    
+
     // Analyze with AI
     await analyzeFiles(files);
   };
 
   const analyzeFiles = async (files: File[]) => {
     setIsAnalyzingFile(true);
-    
+
     try {
       const fileDescriptions: string[] = [];
-      
+
       for (const file of files) {
         if (file.type.startsWith('image/')) {
           // Analyze image with vision AI
@@ -1532,29 +1532,29 @@ export const PromptEngineer = () => {
           fileDescriptions.push(`📄 File: ${file.name} (${(file.size / 1024).toFixed(1)}KB, ${file.type || 'unknown type'})`);
         }
       }
-      
+
       // Add analysis to textarea
       const analysisText = fileDescriptions.join('\n');
-      const newInput = userInput 
+      const newInput = userInput
         ? `${userInput}\n\n${analysisText}`
         : analysisText;
-      
+
       setUserInput(newInput);
-      
+
       toast({
         title: "✅ Files Analyzed!",
         description: `${files.length} file(s) analyzed and added to your prompt`,
       });
     } catch (error) {
       console.error('Error analyzing files:', error);
-      
+
       // Even if analysis fails, add file names
       const fileList = files.map(f => `📄 ${f.name}`).join('\n');
-      const newInput = userInput 
+      const newInput = userInput
         ? `${userInput}\n\n${fileList}`
         : fileList;
       setUserInput(newInput);
-      
+
       toast({
         title: "Files Added",
         description: "Files added to prompt. AI analysis not available.",
@@ -1584,22 +1584,22 @@ export const PromptEngineer = () => {
 
     try {
       console.log('Analyzing website:', url);
-      
+
       // API disabled - showing feedback only
       const simulatedAnalysis = `This is a simulated analysis of ${url}\n\nKey points:\n- Website structure analyzed\n- Content extracted\n- Key information identified`;
-      
-      setUserInput(userInput 
+
+      setUserInput(userInput
         ? `${userInput}\n\n[Website Analysis]: ${simulatedAnalysis}`
         : `[Website Analysis]: ${simulatedAnalysis}`
       );
-      
+
       toast({
         title: "✅ Website Analyzed!",
         description: "Website analysis added to your prompt",
       });
     } catch (error) {
       console.error('Error analyzing website:', error);
-      
+
       toast({
         title: "Analysis Failed",
         description: "Could not analyze website. Some sites block automated access. Try simpler sites or paste HTML directly.",
@@ -1623,7 +1623,7 @@ export const PromptEngineer = () => {
 
     setIsExecutingWorkflow(true);
     setWorkflowResults([]);
-    
+
     // Initialize progress tracking
     const initialProgress: StepProgress[] = steps.map((step, index) => ({
       stepIndex: index,
@@ -1639,9 +1639,9 @@ export const PromptEngineer = () => {
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         const startTime = Date.now();
-        
+
         // Update progress - mark current step as running
-        setWorkflowProgress(prev => prev.map((p, idx) => 
+        setWorkflowProgress(prev => prev.map((p, idx) =>
           idx === i ? { ...p, status: 'running', startTime } : p
         ));
 
@@ -1663,7 +1663,7 @@ export const PromptEngineer = () => {
           await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
 
           const executionTime = Date.now() - startTime;
-          
+
           // Generate intelligent, contextual output based on step type
           let stepOutput = "";
           const stepNameLower = step.name.toLowerCase();
@@ -1863,7 +1863,7 @@ This output will be passed to the next agent in the workflow for further refinem
           previousOutput = stepOutput;
 
           // Update progress - mark step as completed
-          setWorkflowProgress(prev => prev.map((p, idx) => 
+          setWorkflowProgress(prev => prev.map((p, idx) =>
             idx === i ? { ...p, status: 'completed', endTime: Date.now() } : p
           ));
 
@@ -1877,12 +1877,12 @@ This output will be passed to the next agent in the workflow for further refinem
           setWorkflowResults([...results]);
         } catch (stepError) {
           // Update progress - mark step as error
-          setWorkflowProgress(prev => prev.map((p, idx) => 
-            idx === i ? { 
-              ...p, 
-              status: 'error', 
-              endTime: Date.now(), 
-              error: stepError instanceof Error ? stepError.message : 'Unknown error' 
+          setWorkflowProgress(prev => prev.map((p, idx) =>
+            idx === i ? {
+              ...p,
+              status: 'error',
+              endTime: Date.now(),
+              error: stepError instanceof Error ? stepError.message : 'Unknown error'
             } : p
           ));
           throw stepError;
@@ -1930,14 +1930,14 @@ This output will be passed to the next agent in the workflow for further refinem
           {/* Dynamic gradient overlay with movement */}
           <div className="absolute inset-0 bg-gradient-to-br from-black via-zinc-900 to-black animate-pulse" style={{ animationDuration: '3s' }} />
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-zinc-800/50 to-transparent animate-pulse" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-          
+
           {/* Enhanced floating orbs */}
           <div className="absolute inset-0 opacity-30 pointer-events-none">
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-float" style={{ animationDuration: '6s' }} />
             <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-l from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-float" style={{ animationDuration: '8s', animationDelay: '2s' }} />
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-cyan-500/15 to-blue-500/15 rounded-full blur-2xl animate-float" style={{ animationDuration: '7s', animationDelay: '3s' }} />
           </div>
-          
+
           {/* Animated particles - contained */}
           <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden">
             {[...Array(12)].map((_, i) => (
@@ -1953,23 +1953,23 @@ This output will be passed to the next agent in the workflow for further refinem
               />
             ))}
           </div>
-          
+
           {/* Dynamic grid pattern with shimmer */}
           <div className="absolute inset-0 opacity-15">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-shimmer" style={{ animationDuration: '3s' }} />
             <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_0%,rgba(255,255,255,0.1)_50%,transparent_100%)] animate-shimmer" style={{ animationDuration: '4s', animationDelay: '1.5s' }} />
           </div>
-          
+
           {/* Breathing light effect */}
           <div className="absolute inset-0 opacity-40 mix-blend-overlay">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(99,102,241,0.1),rgba(168,85,247,0.05),rgba(255,255,255,0))] animate-pulse" style={{ animationDuration: '4s' }} />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(236,72,153,0.1),rgba(59,130,246,0.05),rgba(255,255,255,0))] animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }} />
           </div>
-          
+
           {/* Enhanced edge vignette */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_60%,rgba(0,0,0,0.6)_100%)]" />
         </div>
-        
+
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 animate-fade-in">
           {/* Header with Centered Badge */}
           <div className="flex items-center justify-center mb-6 sm:mb-8">
@@ -1989,7 +1989,7 @@ This output will be passed to the next agent in the workflow for further refinem
               </div>
             </div>
           </div>
-          
+
           {/* Main Headline with Enhanced Typography */}
           <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight tracking-tight">
             <span className="inline-block text-white mb-1 sm:mb-2 animate-slide-up">Craft Perfect</span><br />
@@ -1999,22 +1999,22 @@ This output will be passed to the next agent in the workflow for further refinem
             {/* Decorative line */}
             <div className="mx-auto mt-2 sm:mt-4 w-16 sm:w-24 h-0.5 sm:h-1 bg-gradient-to-r from-transparent via-white/60 to-transparent rounded-full animate-fade-in" style={{ animationDelay: '0.8s' }} />
           </h1>
-          
+
           <p className="text-sm xs:text-base sm:text-lg md:text-xl text-white/80 max-w-xl sm:max-w-2xl lg:max-w-3xl mx-auto mb-6 sm:mb-8 md:mb-10 leading-relaxed font-light px-2 sm:px-4">
             Transform your ideas into precision-engineered prompts that unlock the full potential of any AI model. Works in 50+ languages with smart voice input.
           </p>
-          
+
           {/* Enhanced CTA Section */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-2">
-            <Button 
+            <Button
               variant="default"
-              size="lg" 
+              size="lg"
               className="relative w-full sm:w-auto bg-gradient-primary text-white hover:shadow-glow group text-sm sm:text-base md:text-lg px-6 sm:px-8 md:px-12 py-3 sm:py-4 h-12 sm:h-14 md:h-16 rounded-xl sm:rounded-2xl font-bold overflow-hidden border-2 border-primary/20 transition-all duration-300 hover:scale-105 touch-manipulation"
               onClick={() => document.getElementById('tool-selector')?.scrollIntoView({ behavior: 'smooth' })}
             >
               {/* Button glow effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer" />
-              
+
               <div className="relative flex items-center justify-center gap-2 sm:gap-3">
                 <div className="p-1 rounded-lg bg-white/10 group-hover:bg-white/20 transition-colors">
                   <Brain className="w-4 h-4 sm:w-5 sm:h-5 group-hover:animate-pulse transition-transform duration-700" />
@@ -2040,8 +2040,8 @@ This output will be passed to the next agent in the workflow for further refinem
           </div>
           <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-4 xl:gap-6">
             {WORKFLOW_STEPS.map((step, index) => (
-              <div 
-                key={step.number} 
+              <div
+                key={step.number}
                 className="relative group animate-slide-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
@@ -2187,9 +2187,9 @@ This output will be passed to the next agent in the workflow for further refinem
                     .filter(model => selectedCategory === 'all' || model.category === selectedCategory)
                     .filter(model => {
                       if (searchQuery === '') return true;
-                      
+
                       const query = searchQuery.toLowerCase().trim();
-                      
+
                       // Smart search aliases and mappings
                       const searchAliases: { [key: string]: string[] } = {
                         'chatgpt': ['gpt', 'openai', 'gpt-5', 'gpt-4'],
@@ -2207,7 +2207,7 @@ This output will be passed to the next agent in the workflow for further refinem
                         'sora': ['sora', 'openai', 'video'],
                         'elevenlabs': ['elevenlabs', 'voice', 'audio', 'tts']
                       };
-                      
+
                       // Check if query matches any alias
                       let matchTerms: string[] = [query];
                       for (const [alias, terms] of Object.entries(searchAliases)) {
@@ -2215,7 +2215,7 @@ This output will be passed to the next agent in the workflow for further refinem
                           matchTerms = [...matchTerms, ...terms];
                         }
                       }
-                      
+
                       // Search across multiple fields with all match terms
                       const searchableText = [
                         model.name,
@@ -2224,25 +2224,24 @@ This output will be passed to the next agent in the workflow for further refinem
                         model.id,
                         model.category
                       ].join(' ').toLowerCase();
-                      
-                      return matchTerms.some(term => 
+
+                      return matchTerms.some(term =>
                         searchableText.includes(term)
                       );
                     })
                     .map((model) => {
                       const Icon = model.icon;
-                      const isSelected = compareMode 
+                      const isSelected = compareMode
                         ? selectedModels.includes(model.id)
                         : selectedTool === model.id;
-                      
+
                       return (
                         <button
                           key={model.id}
-                          className={`group relative flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg min-h-[120px] touch-manipulation ${
-                            isSelected
-                              ? 'bg-gradient-primary text-white border-primary shadow-glow scale-[1.02]' 
+                          className={`group relative flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg min-h-[120px] touch-manipulation ${isSelected
+                              ? 'bg-gradient-primary text-white border-primary shadow-glow scale-[1.02]'
                               : 'bg-background border-border/50 hover:border-primary/40 hover:shadow-md hover:bg-primary/5'
-                          }`}
+                            }`}
                           onClick={() => {
                             if (compareMode) {
                               if (selectedModels.includes(model.id)) {
@@ -2259,40 +2258,36 @@ This output will be passed to the next agent in the workflow for further refinem
                             } else {
                               setSelectedTool(model.id);
                             }
-                            
+
                             // Scroll to input area after selection
                             setTimeout(() => {
-                              document.getElementById('describe-vision')?.scrollIntoView({ 
+                              document.getElementById('describe-vision')?.scrollIntoView({
                                 behavior: 'smooth',
                                 block: 'center'
                               });
                             }, 100);
                           }}
                         >
-                          <div className={`p-2 rounded-lg transition-all duration-300 ${
-                            isSelected
-                              ? 'bg-white/20 group-hover:animate-bounce-gentle' 
+                          <div className={`p-2 rounded-lg transition-all duration-300 ${isSelected
+                              ? 'bg-white/20 group-hover:animate-bounce-gentle'
                               : 'bg-primary/10 group-hover:bg-primary/20'
-                          }`}>
-                            <Icon className={`w-5 h-5 transition-colors ${
-                              isSelected ? 'text-white' : 'text-primary'
-                            }`} />
+                            }`}>
+                            <Icon className={`w-5 h-5 transition-colors ${isSelected ? 'text-white' : 'text-primary'
+                              }`} />
                           </div>
                           <div className="text-center flex-1">
-                            <span className={`text-xs font-bold block leading-tight ${
-                              isSelected ? 'text-white' : 'text-foreground'
-                            }`}>
+                            <span className={`text-xs font-bold block leading-tight ${isSelected ? 'text-white' : 'text-foreground'
+                              }`}>
                               {model.name}
                             </span>
-                            <Badge 
-                              variant="secondary" 
+                            <Badge
+                              variant="secondary"
                               className={`text-xs mt-1 ${isSelected ? 'bg-white/20 text-white' : ''}`}
                             >
                               {model.provider}
                             </Badge>
-                            <span className={`text-xs mt-1 block leading-tight ${
-                              isSelected ? 'text-white/80' : 'text-muted-foreground'
-                            }`}>
+                            <span className={`text-xs mt-1 block leading-tight ${isSelected ? 'text-white/80' : 'text-muted-foreground'
+                              }`}>
                               {model.description}
                             </span>
                           </div>
@@ -2326,12 +2321,11 @@ This output will be passed to the next agent in the workflow for further refinem
                     <span className="text-xs sm:text-sm text-muted-foreground font-medium">Voice Input</span>
                   </div>
                 </div>
-                
+
                 <div className="relative">
                   <div
-                    className={`relative transition-all duration-300 ${
-                      isDragging ? 'ring-4 ring-primary ring-offset-2 scale-[1.02]' : ''
-                    }`}
+                    className={`relative transition-all duration-300 ${isDragging ? 'ring-4 ring-primary ring-offset-2 scale-[1.02]' : ''
+                      }`}
                     onDragEnter={handleDragEnter}
                     onDragLeave={handleDragLeave}
                     onDragOver={handleDragOver}
@@ -2344,7 +2338,7 @@ This output will be passed to the next agent in the workflow for further refinem
                       className="min-h-[120px] sm:min-h-[140px] bg-background/70 backdrop-blur border-2 border-border/40 focus:border-primary/60 resize-none text-sm sm:text-base rounded-xl sm:rounded-2xl shadow-inner focus:shadow-lg transition-all duration-300 p-4 sm:p-6 pr-24 sm:pr-28 pb-3 sm:pb-4 touch-manipulation"
                       rows={5}
                     />
-                    
+
                     {/* Drag overlay */}
                     {isDragging && (
                       <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm border-4 border-dashed border-primary rounded-xl flex items-center justify-center z-20 pointer-events-none">
@@ -2354,7 +2348,7 @@ This output will be passed to the next agent in the workflow for further refinem
                         </div>
                       </div>
                     )}
-                    
+
                     {/* File analyzing overlay */}
                     {isAnalyzingFile && (
                       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-xl flex items-center justify-center z-20">
@@ -2365,7 +2359,7 @@ This output will be passed to the next agent in the workflow for further refinem
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Voice Input and Upload Buttons */}
                   <div className="absolute bottom-4 sm:bottom-14 right-2 sm:right-3 z-10 flex items-center gap-1.5 sm:gap-1 bg-background/80 backdrop-blur-sm rounded-full p-1.5 sm:p-1 shadow-lg sm:shadow-sm border border-border/30">
                     {/* Website URL Button */}
@@ -2402,7 +2396,7 @@ This output will be passed to the next agent in the workflow for further refinem
                               }
                             }}
                           />
-                          <Button 
+                          <Button
                             onClick={() => analyzeWebsite(websiteUrl)}
                             disabled={!websiteUrl.trim() || isAnalyzingFile}
                           >
@@ -2421,7 +2415,7 @@ This output will be passed to the next agent in the workflow for further refinem
                         </div>
                       </DialogContent>
                     </Dialog>
-                    
+
                     {/* Plus Button for File Upload */}
                     <Button
                       variant="ghost"
@@ -2432,18 +2426,17 @@ This output will be passed to the next agent in the workflow for further refinem
                     >
                       <Plus className="h-5 w-5 sm:h-5 sm:w-5 text-foreground" />
                     </Button>
-                    
+
                     {/* Voice Input Button */}
                     <div className="relative">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={isRecording ? stopVoiceInput : startVoiceInput}
-                        className={`h-8 w-8 sm:h-9 sm:w-9 rounded-full transition-colors touch-manipulation ${
-                          isRecording 
-                            ? 'bg-destructive hover:bg-destructive/90' 
+                        className={`h-8 w-8 sm:h-9 sm:w-9 rounded-full transition-colors touch-manipulation ${isRecording
+                            ? 'bg-destructive hover:bg-destructive/90'
                             : 'hover:bg-accent'
-                        }`}
+                          }`}
                         disabled={isProcessingVoice}
                       >
                         {isProcessingVoice ? (
@@ -2454,17 +2447,17 @@ This output will be passed to the next agent in the workflow for further refinem
                           <Mic className="h-5 w-5 text-foreground" />
                         )}
                       </Button>
-                      
+
                       {/* Audio level indicator - Enhanced for mobile */}
                       {isRecording && audioLevel > 0 && (
-                        <div 
+                        <div
                           className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-1 bg-gradient-to-r from-red-500 to-pink-500 rounded-full transition-all duration-100 shadow-glow"
                           style={{ width: `${Math.max(30, audioLevel)}%` }}
                         />
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Character count and language indicator - Top right positioning */}
                   <div className="absolute top-3 sm:top-3.5 right-3 sm:right-4 z-10 pointer-events-none flex flex-wrap items-center gap-2">
                     {detectedLanguage && (
@@ -2488,7 +2481,7 @@ This output will be passed to the next agent in the workflow for further refinem
                     {/* Recording indicator with audio level visualization */}
                     <div className="p-4 sm:p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/30 dark:to-pink-950/30 border-2 border-red-300 dark:border-red-800 rounded-xl sm:rounded-xl overflow-hidden relative shadow-lg">
                       <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10 animate-pulse" />
-                      
+
                       <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse flex-shrink-0 shadow-glow" />
@@ -2502,7 +2495,7 @@ This output will be passed to the next agent in the workflow for further refinem
                             </Badge>
                           )}
                         </div>
-                        
+
                         {/* Audio level visualization - Larger for mobile */}
                         <div className="mb-4">
                           <div className="flex items-center gap-1 sm:gap-1 h-12 sm:h-8">
@@ -2525,7 +2518,7 @@ This output will be passed to the next agent in the workflow for further refinem
                             <span className="text-sm sm:text-xs font-mono text-red-600 dark:text-red-400 font-bold">{audioLevel}%</span>
                           </div>
                         </div>
-                        
+
                         {/* Real-time interim transcription - Enhanced */}
                         {interimTranscript && (
                           <div className="bg-white/60 dark:bg-black/40 rounded-xl p-4 border-2 border-red-300/60 dark:border-red-700/60 shadow-md">
@@ -2537,7 +2530,7 @@ This output will be passed to the next agent in the workflow for further refinem
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Final transcript display - Enhanced */}
                         {voiceTranscript && (
                           <div className="bg-white/80 dark:bg-black/50 rounded-xl p-4 border-2 border-red-300/60 dark:border-red-700/60 mt-3 shadow-md">
@@ -2577,7 +2570,7 @@ This output will be passed to the next agent in the workflow for further refinem
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                
+
                 {/* Uploaded Files Preview */}
                 {uploadedFiles.length > 0 && (
                   <div className="mt-4 space-y-2">
@@ -2587,8 +2580,8 @@ This output will be passed to the next agent in the workflow for further refinem
                         <div key={index} className="relative group">
                           {file.type.startsWith('image/') && uploadedImages[index] ? (
                             <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-border">
-                              <img 
-                                src={uploadedImages[index]} 
+                              <img
+                                src={uploadedImages[index]}
                                 alt={file.name}
                                 className="w-full h-full object-cover"
                               />
@@ -2633,7 +2626,7 @@ This output will be passed to the next agent in the workflow for further refinem
                         <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">AI automatically improved your prompt</p>
                       </div>
                     </div>
-                    
+
                     {inputEnhancements.length > 0 && (
                       <div className="mb-3 sm:mb-4">
                         <h5 className="font-semibold text-green-800 dark:text-green-200 mb-2 text-xs sm:text-sm">Applied Improvements:</h5>
@@ -2646,7 +2639,7 @@ This output will be passed to the next agent in the workflow for further refinem
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="bg-white/60 dark:bg-black/20 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-green-200/50 dark:border-green-800/50">
                       <p className="text-xs sm:text-sm text-green-800 dark:text-green-200 font-medium mb-1">Enhanced Version:</p>
                       <p className="text-sm sm:text-base text-green-700 dark:text-green-300 break-words">{enhancedInput}</p>
@@ -2661,7 +2654,7 @@ This output will be passed to the next agent in the workflow for further refinem
                   <div className="relative overflow-hidden rounded-2xl bg-black border border-white/[0.12] backdrop-blur-xl shadow-2xl transition-all duration-500 hover:border-white/[0.2] hover:shadow-white/[0.05]">
                     {/* Animated background */}
                     <div className="absolute inset-0 bg-white/[0.02] animate-pulse opacity-50"></div>
-                    
+
                     {/* Content */}
                     <div className="relative p-4 sm:p-5">
                       <div className="flex items-center justify-between">
@@ -2679,7 +2672,7 @@ This output will be passed to the next agent in the workflow for further refinem
                               <span className="text-xs text-white/60">Trial Mode</span>
                             </div>
                             <p className="text-sm font-medium text-white leading-tight">
-                              {promptLimit.canUse 
+                              {promptLimit.canUse
                                 ? (
                                   <span className="flex items-center gap-2">
                                     <span className="w-2 h-2 bg-white rounded-full animate-pulse shadow-white/50 shadow-sm"></span>
@@ -2695,10 +2688,10 @@ This output will be passed to the next agent in the workflow for further refinem
                             </p>
                           </div>
                         </div>
-                        
+
                         {!promptLimit.canUse ? (
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             onClick={() => navigate('/pricing')}
                             className="bg-white text-black hover:bg-white/90 font-semibold px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/20"
                           >
@@ -2714,7 +2707,7 @@ This output will be passed to the next agent in the workflow for further refinem
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Progress bar */}
                       <div className="mt-4 space-y-2">
                         <div className="flex items-center justify-between text-xs">
@@ -2722,12 +2715,11 @@ This output will be passed to the next agent in the workflow for further refinem
                           <span className="text-white/80 font-medium">{promptLimit.usageCount}/1</span>
                         </div>
                         <div className="relative h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
-                          <div 
-                            className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out ${
-                              promptLimit.canUse 
-                                ? 'bg-white shadow-white/30 shadow-sm' 
+                          <div
+                            className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out ${promptLimit.canUse
+                                ? 'bg-white shadow-white/30 shadow-sm'
                                 : 'bg-white/60 shadow-white/20 shadow-sm'
-                            }`}
+                              }`}
                             style={{ width: `${(promptLimit.usageCount / 1) * 100}%` }}
                           ></div>
                           {/* Animated shimmer effect */}
@@ -2740,10 +2732,10 @@ This output will be passed to the next agent in the workflow for further refinem
               )}
 
               {/* Generate Button */}
-              <Button 
-                variant="stylish" 
-                size="lg" 
-                className="w-full h-12 sm:h-14 md:h-16 text-sm sm:text-base md:text-lg font-bold touch-manipulation" 
+              <Button
+                variant="stylish"
+                size="lg"
+                className="w-full h-12 sm:h-14 md:h-16 text-sm sm:text-base md:text-lg font-bold touch-manipulation"
                 onClick={generatePrompts}
                 disabled={isGenerating || !userInput.trim() || (compareMode ? selectedModels.length === 0 : !selectedTool)}
               >
@@ -2758,7 +2750,7 @@ This output will be passed to the next agent in the workflow for further refinem
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Brain className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-pulse flex-shrink-0" />
                     <span className="truncate">
-                      {compareMode 
+                      {compareMode
                         ? `Compare ${selectedModels.length || 0} Model${selectedModels.length !== 1 ? 's' : ''}`
                         : 'Generate Model-Optimized Prompts'}
                     </span>
@@ -2776,7 +2768,7 @@ This output will be passed to the next agent in the workflow for further refinem
       {isExecutingWorkflow && workflowProgress.length > 0 && (
         <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-background w-full overflow-x-hidden">
           <div className="max-w-4xl mx-auto w-full">
-            <WorkflowProgress 
+            <WorkflowProgress
               steps={workflowProgress}
               currentStep={workflowProgress.filter(s => s.status === 'completed').length + (workflowProgress.some(s => s.status === 'running') ? 1 : 0)}
               totalSteps={workflowProgress.length}
@@ -2798,9 +2790,8 @@ This output will be passed to the next agent in the workflow for further refinem
       {optimizedPrompts.length > 0 && (
         <section id="results" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 bg-muted/20 w-full overflow-x-hidden">
           <div className="max-w-4xl mx-auto w-full">
-            <div className={`text-center mb-8 sm:mb-10 md:mb-12 transition-all duration-700 w-full ${
-              showResults ? 'animate-fade-in' : 'opacity-0'
-            }`}>
+            <div className={`text-center mb-8 sm:mb-10 md:mb-12 transition-all duration-700 w-full ${showResults ? 'animate-fade-in' : 'opacity-0'
+              }`}>
               <h2 className="text-xl xs:text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4 px-2 sm:px-0 break-words">
                 Your Premium Prompts
               </h2>
@@ -2808,7 +2799,7 @@ This output will be passed to the next agent in the workflow for further refinem
                 Copy and paste these optimized prompts into your AI tool
               </p>
             </div>
-            
+
             <div className="space-y-4 sm:space-y-6 w-full">
               {optimizedPrompts.map((promptTemplate, index) => {
                 const getIcon = (title: string) => {
@@ -2819,13 +2810,12 @@ This output will be passed to the next agent in the workflow for further refinem
                   return Sparkles;
                 };
                 const Icon = getIcon(promptTemplate.title);
-                
+
                 return (
-                  <Card 
-                    key={index} 
-                    className={`bg-gradient-card shadow-elegant hover:shadow-glow border-0 transition-all duration-700 hover:-translate-y-1 group overflow-hidden w-full ${
-                      showResults ? 'animate-slide-up' : 'opacity-0 translate-y-4'
-                    }`}
+                  <Card
+                    key={index}
+                    className={`bg-gradient-card shadow-elegant hover:shadow-glow border-0 transition-all duration-700 hover:-translate-y-1 group overflow-hidden w-full ${showResults ? 'animate-slide-up' : 'opacity-0 translate-y-4'
+                      }`}
                     style={{ animationDelay: `${index * 150}ms` }}
                   >
                     <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4 border-b border-border/20 bg-gradient-to-r from-primary/5 to-transparent w-full">
@@ -2886,13 +2876,12 @@ This output will be passed to the next agent in the workflow for further refinem
                 );
               })}
             </div>
-            
+
             {/* Reset Button */}
-            <div className={`mt-12 text-center transition-all duration-700 ${
-              showResults ? 'animate-fade-in' : 'opacity-0'
-            }`}>
-              <Button 
-                variant="outline" 
+            <div className={`mt-12 text-center transition-all duration-700 ${showResults ? 'animate-fade-in' : 'opacity-0'
+              }`}>
+              <Button
+                variant="outline"
                 size="lg"
                 onClick={() => {
                   setOptimizedPrompts([]);

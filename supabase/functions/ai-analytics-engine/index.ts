@@ -22,11 +22,11 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey);
     const { userId, analysisType, dataPoints, context }: AnalyticsRequest = await req.json();
 
@@ -48,19 +48,19 @@ serve(async (req) => {
 
     const prompts: Record<string, { system: string; user: string }> = {
       performance: {
-        system: 'You are an expert AI analytics system for prompt engineering performance analysis.',
+        system: 'You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an expert AI analytics system for prompt engineering performance analysis.',
         user: `Analyze performance data:\nHistorical: ${JSON.stringify(historicalData?.slice(0, 10))}\nMetrics: ${JSON.stringify(performanceData?.slice(0, 10))}\nContext: ${JSON.stringify(context)}\n\nProvide JSON with: insights, patterns, recommendations, predictions, risks`
       },
       prediction: {
-        system: 'You are a predictive AI analytics expert.',
+        system: 'You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are a predictive AI analytics expert.',
         user: `Predict future performance:\nData: ${JSON.stringify(historicalData?.slice(0, 10))}\nMetrics: ${JSON.stringify(performanceData?.slice(0, 10))}\n\nProvide JSON with: predictions, trends, opportunities, actions, ranges`
       },
       optimization: {
-        system: 'You are an AI optimization specialist.',
+        system: 'You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an AI optimization specialist.',
         user: `Provide optimization recommendations:\nPerformance: ${JSON.stringify(performanceData?.slice(0, 10))}\nData Points: ${JSON.stringify(dataPoints)}\n\nProvide JSON with: optimizations, quickWins, longTerm`
       },
       insights: {
-        system: 'You are an intelligent insights generator.',
+        system: 'You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an intelligent insights generator.',
         user: `Generate insights:\nPerformance: ${JSON.stringify(performanceData?.slice(0, 10))}\nHistorical: ${JSON.stringify(historicalData?.slice(0, 10))}\n\nProvide JSON with: patterns, anomalies, comparisons, discoveries, trends`
       }
     };

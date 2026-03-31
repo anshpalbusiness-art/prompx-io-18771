@@ -7,7 +7,7 @@ import { User } from "@supabase/supabase-js";
 import { usePlanAccess } from "@/hooks/usePlanAccess";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Crown, Lock, Sparkles } from "lucide-react";
+import { Crown, Lock, Sparkles, Cpu } from "lucide-react";
 
 const Agents = () => {
   const navigate = useNavigate();
@@ -55,8 +55,8 @@ const Agents = () => {
           <div className="mb-6 flex items-center justify-between px-2">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-3">
-                <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20">
-                  <Sparkles className="h-4 w-4 text-primary" />
+                <div className="flex items-center justify-center p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                  <Cpu className="h-5 w-5 text-zinc-700 dark:text-zinc-300 relative z-10" />
                 </div>
                 AI Agent Hub
               </h1>
@@ -65,18 +65,7 @@ const Agents = () => {
               </p>
             </div>
 
-            {/* Compact Pro Banner */}
-            {!planAccess.isLoading && planAccess.planType === 'free' && (
-              <Button
-                onClick={() => navigate('/pricing')}
-                variant="outline"
-                size="sm"
-                className="gap-2 h-8 text-xs border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              >
-                <Crown className="h-3.5 w-3.5" />
-                Upgrade to Pro
-              </Button>
-            )}
+
           </div>
 
           {/* Main Agent Hub */}

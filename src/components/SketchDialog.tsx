@@ -92,8 +92,10 @@ export const SketchDialog: React.FC<SketchDialogProps> = ({ open, onClose, onSav
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = (e.clientY - rect.top) * scaleY;
 
                 ctx.beginPath();
                 ctx.moveTo(x, y);
@@ -110,8 +112,10 @@ export const SketchDialog: React.FC<SketchDialogProps> = ({ open, onClose, onSav
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = (e.clientY - rect.top) * scaleY;
 
                 ctx.lineTo(x, y);
                 ctx.strokeStyle = tool === 'eraser' ? '#FFFFFF' : color;
@@ -189,8 +193,8 @@ export const SketchDialog: React.FC<SketchDialogProps> = ({ open, onClose, onSav
                                         key={c}
                                         onClick={() => setColor(c)}
                                         className={`w-8 h-8 rounded-full border-2 transition-all ${color === c
-                                                ? 'border-zinc-900 dark:border-white scale-110'
-                                                : 'border-zinc-300 dark:border-zinc-700 hover:scale-105'
+                                            ? 'border-zinc-900 dark:border-white scale-110'
+                                            : 'border-zinc-300 dark:border-zinc-700 hover:scale-105'
                                             }`}
                                         style={{ backgroundColor: c }}
                                         title={c}

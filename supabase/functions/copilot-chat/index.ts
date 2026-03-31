@@ -13,12 +13,12 @@ serve(async (req) => {
   try {
     const { messages, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an expert prompt engineering co-pilot. Your role is to help users craft the perfect prompt through interactive conversation.
+    const systemPrompt = `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an expert prompt engineering co-pilot. Your role is to help users craft the perfect prompt through interactive conversation.
 
 Guidelines:
 - Ask 2-3 clarifying questions at a time (never overwhelm with too many)

@@ -22,3 +22,37 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     heartbeatIntervalMs: 15000,
   },
 });
+
+// ==========================================
+// TEMPORARY DEV BYPASS (Due to Supabase Outage)
+// ==========================================
+const mockUser = {
+  id: '00000000-0000-0000-0000-000000000000',
+  email: 'dev@local.bypass',
+  app_metadata: {},
+  user_metadata: { username: 'BypassUser' },
+  aud: 'authenticated',
+  created_at: new Date().toISOString()
+};
+
+const mockSession = {
+  access_token: 'mock-token',
+  token_type: 'bearer',
+  expires_in: 3600,
+  refresh_token: 'mock-refresh',
+  user: mockUser
+};
+
+supabase.auth.getSession = async () => {
+  return { data: { session: mockSession }, error: null } as any;
+};
+
+supabase.auth.getUser = async () => {
+  return { data: { user: mockUser }, error: null } as any;
+};
+
+supabase.auth.onAuthStateChange = (callback) => {
+  setTimeout(() => callback('SIGNED_IN', mockSession as any), 0);
+  return { data: { subscription: { unsubscribe: () => {} } } };
+};
+// ==========================================

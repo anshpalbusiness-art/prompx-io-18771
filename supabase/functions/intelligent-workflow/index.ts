@@ -41,7 +41,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: `As an expert workflow architect and AI system designer, create an intelligent multi-agent workflow based on this user's goal:
+            content: `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. As an expert workflow architect and AI system designer, create an intelligent multi-agent workflow based on this user's goal:
 
 **User Goal:**
 "${naturalLanguageInput}"

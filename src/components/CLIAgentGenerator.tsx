@@ -737,7 +737,7 @@ export default function CLIAgentGenerator() {
                                                 <div
                                                     role="button"
                                                     onClick={(e) => handleDeleteChat(e, chat.id)}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
+                                                    className="opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2 p-1.5 z-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
                                                     title="Delete Chat"
                                                 >
                                                     <Trash2 className="h-4 w-4" />

@@ -45,12 +45,12 @@ export const WebsiteAnalyzer: React.FC<WebsiteAnalyzerProps> = ({
         setLoadingMode(mode);
         try {
             const normalized = normalizeUrl(url);
-            await onAnalyze(normalized, mode);
+            onClose(); // Close the dialog immediately 
             setUrl('');
-            onClose();
-            toast.success(`${mode === 'prompt' ? 'Prompt' : 'Code'} generated successfully!`);
-        } catch (error) {
-            toast.error('Failed to analyze website');
+            // Fire analysis in background without awaiting the whole stream layer
+            onAnalyze(normalized, mode).catch(error => {
+                toast.error('Failed to analyze website');
+            });
         } finally {
             setLoadingMode(null);
         }

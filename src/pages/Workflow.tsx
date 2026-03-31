@@ -105,6 +105,9 @@ const Workflow = () => {
     }
   }, [location.state, loadTemplate]);
 
+  const navState = location.state as { templateId?: string, initialPrompt?: string } | null;
+  const initialPrompt = navState?.initialPrompt;
+
   // Handle shared workflow URL (?shared=<id>)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -316,6 +319,7 @@ const Workflow = () => {
             isPlanning={state.planningStatus === 'planning'}
             error={state.planningError}
             hasActiveWorkflow={!!activeWorkflow}
+            initialPrompt={initialPrompt}
           />
         </div>
 

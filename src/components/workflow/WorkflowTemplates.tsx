@@ -156,16 +156,19 @@ export function WorkflowTemplates() {
                         return (
                             <motion.div
                                 key={template.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 + idx * 0.05 }}
-                                className="group relative rounded-2xl border border-zinc-800/50 bg-zinc-900/60 backdrop-blur-sm p-5 hover:border-zinc-700/60 hover:bg-zinc-900/80 transition-all cursor-pointer"
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                transition={{ delay: 0.1 + idx * 0.05, duration: 0.4, ease: "easeOut" }}
+                                className="group relative rounded-3xl border border-white/5 bg-background/40 backdrop-blur-2xl p-6 hover:shadow-[0_0_40px_rgba(139,92,246,0.15)] transition-all duration-500 cursor-pointer overflow-hidden"
                                 onClick={() => !isUsing && handleUseTemplate(template)}
                             >
+                                {/* Animated glow background */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
                                 {/* Category Badge */}
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between mb-4 relative z-10">
                                     <div
-                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md shadow-sm"
                                         style={{
                                             background: `${catMeta.color}15`,
                                             color: catMeta.color,
@@ -175,49 +178,52 @@ export function WorkflowTemplates() {
                                         {catMeta.icon}
                                         {catMeta.label}
                                     </div>
-                                    <span className="text-[10px] text-zinc-600">
-                                        {template.use_count > 0 ? `${template.use_count} uses` : 'New'}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                                        <Sparkles className="w-3 h-3 text-zinc-400" />
+                                        <span className="text-[11px] font-medium text-zinc-400">
+                                            {template.use_count > 0 ? `${template.use_count} uses` : 'New'}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {/* Content */}
-                                <h3 className="text-sm font-bold text-zinc-200 mb-1 group-hover:text-white transition-colors">
+                                <h3 className="text-lg font-bold text-zinc-100 mb-2 group-hover:text-violet-400 transition-colors relative z-10">
                                     {template.title}
                                 </h3>
-                                <p className="text-xs text-zinc-500 leading-relaxed mb-4 line-clamp-2">
+                                <p className="text-sm text-zinc-400 leading-relaxed mb-6 line-clamp-2 relative z-10">
                                     {template.description}
                                 </p>
 
                                 {/* Footer */}
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1.5">
+                                <div className="flex items-center justify-between relative z-10 pt-4 border-t border-white/5">
+                                    <div className="flex items-center gap-2">
                                         {template.nodes.slice(0, 4).map((node: any, i: number) => (
-                                            <span
+                                            <div
                                                 key={i}
-                                                className="w-6 h-6 rounded-md bg-zinc-800/80 flex items-center justify-center text-xs"
+                                                className="w-8 h-8 rounded-xl bg-zinc-800/80 border border-white/5 flex items-center justify-center text-sm shadow-sm"
                                                 title={node.name}
                                             >
                                                 {node.icon}
-                                            </span>
+                                            </div>
                                         ))}
                                         {template.nodes.length > 4 && (
-                                            <span className="text-[10px] text-zinc-600 ml-1">
+                                            <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[11px] font-medium text-zinc-400">
                                                 +{template.nodes.length - 4}
-                                            </span>
+                                            </div>
                                         )}
                                     </div>
-                                    <motion.div
-                                        className="flex items-center gap-1 text-xs font-medium text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    <div
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-500/10 text-sm font-semibold text-violet-400 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300"
                                     >
                                         {isUsing ? (
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <Loader2 className="w-4 h-4 animate-spin" />
                                         ) : (
                                             <>
-                                                Use template
-                                                <ArrowRight className="w-3 h-3" />
+                                                Deploy
+                                                <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}
-                                    </motion.div>
+                                    </div>
                                 </div>
                             </motion.div>
                         );

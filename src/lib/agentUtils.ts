@@ -321,7 +321,7 @@ export const executeAgent = async (
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 messages,
-                model: 'grok-3',
+                model: 'grok-4-0709',
                 stream: false
             })
         });

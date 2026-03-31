@@ -19,6 +19,7 @@ interface Rating {
   not_helpful_count: number;
   profiles?: {
     username: string;
+    email?: string | null;
   };
 }
 
@@ -63,12 +64,12 @@ export const PromptRatingCard = ({ promptId, userId }: PromptRatingCardProps) =>
         const userIds = ratingsRes.data.map(r => r.user_id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, username')
+          .select('id, username, email')
           .in('id', userIds);
 
         const ratingsWithProfiles = ratingsRes.data.map(r => ({
           ...r,
-          profiles: profiles?.find(p => p.id === r.user_id) || { username: 'Anonymous' }
+          profiles: profiles?.find(p => p.id === r.user_id) || { username: 'Anonymous', email: null }
         }));
 
         setRatings(ratingsWithProfiles);
@@ -110,7 +111,7 @@ export const PromptRatingCard = ({ promptId, userId }: PromptRatingCardProps) =>
           .delete()
           .eq('prompt_id', promptId)
           .eq('user_id', userId);
-        
+
         setHasStarred(false);
         setStarCount(prev => prev - 1);
         toast.success('Star removed');
@@ -118,7 +119,7 @@ export const PromptRatingCard = ({ promptId, userId }: PromptRatingCardProps) =>
         await supabase
           .from('prompt_stars')
           .insert({ prompt_id: promptId, user_id: userId });
-        
+
         setHasStarred(true);
         setStarCount(prev => prev + 1);
         toast.success('Starred!');
@@ -206,9 +207,8 @@ export const PromptRatingCard = ({ promptId, userId }: PromptRatingCardProps) =>
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`w-6 h-6 ${
-            star <= value ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
-          } ${!readonly ? 'cursor-pointer hover:text-yellow-400' : ''}`}
+          className={`w-6 h-6 ${star <= value ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
+            } ${!readonly ? 'cursor-pointer hover:text-yellow-400' : ''}`}
           onClick={() => !readonly && onChange?.(star)}
         />
       ))}
@@ -282,14 +282,14 @@ export const PromptRatingCard = ({ promptId, userId }: PromptRatingCardProps) =>
                 <div className="flex items-start gap-3">
                   <Avatar>
                     <AvatarFallback>
-                      {rating.profiles?.username?.[0]?.toUpperCase() || 'U'}
+                      {(rating.profiles?.username || rating.profiles?.email?.split('@')[0] || 'U')?.[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <div className="font-medium">
-                          {rating.profiles?.username || 'Anonymous'}
+                          {rating.profiles?.username || rating.profiles?.email?.split('@')[0] || 'Anonymous'}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <StarRating value={rating.rating} readonly />

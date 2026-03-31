@@ -30,7 +30,7 @@ export const AgentHub = ({ userId, planAccess }: AgentHubProps) => {
                         >
                             <Terminal className="h-4 w-4" />
                             <span className="font-medium">CLI Generator</span>
-                            <Badge variant="secondary" className="ml-1.5 text-[9px] px-1.5 py-0 h-4 flex items-center bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shadow-none">New</Badge>
+                            <Badge variant="secondary" className="ml-1.5 text-[9px] px-1.5 py-0 h-4 flex items-center bg-blue-500/10 text-blue-500 border-blue-500/20 shadow-none">BETA</Badge>
                         </TabsTrigger>
                         <TabsTrigger
                             value="desktop"

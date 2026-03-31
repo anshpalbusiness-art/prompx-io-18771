@@ -25,12 +25,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { 
+    const {
       userId, promptId, promptText, platform, category,
       targetMetrics = ['engagement', 'conversion', 'clarity'],
-      learningEnabled = true 
+      learningEnabled = true
     }: OptimizationRequest = await req.json();
 
     console.log(`Intelligent Optimizer: Processing for user ${userId} on ${platform}`);
@@ -54,7 +54,7 @@ serve(async (req) => {
       .order('usage_count', { ascending: false })
       .limit(5);
 
-    const systemPrompt = `You are an elite AI prompt engineering optimizer.
+    const systemPrompt = `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an elite AI prompt engineering optimizer.
 Your goal is to transform prompts into highly effective versions that maximize ${targetMetrics.join(', ')}.
 Provide specific, actionable improvements with reasoning.`;
 
@@ -93,7 +93,7 @@ Return JSON: {"optimized": "...", "alternatives": ["..."], "improvements": ["...
 
     const aiData = await aiResponse.json();
     const responseText = aiData.choices[0].message.content;
-    
+
     let optimization;
     try {
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);

@@ -28,7 +28,7 @@ serve(async (req) => {
     }
 
     // Use AI with web search capabilities
-    const systemPrompt = `You are a research assistant with access to current web information. 
+    const systemPrompt = `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are a research assistant with access to current web information. 
 Provide comprehensive, factual research results based on the latest available data.
 Structure your response with:
 1. Key Findings (bullet points)

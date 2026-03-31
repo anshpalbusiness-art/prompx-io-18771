@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const apiKey = req.headers.get('x-api-key');
-    
+
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'API key is required. Include it in the x-api-key header.' }),
@@ -28,7 +28,7 @@ serve(async (req) => {
 
     // Extract key prefix from provided API key
     const keyPrefix = apiKey.substring(0, 12);
-    
+
     // Find API key by prefix first
     const { data: keyData, error: keyError } = await supabase
       .from('api_keys')
@@ -47,9 +47,9 @@ serve(async (req) => {
 
     // Validate the full API key using hash
     const { data: isValid, error: validateError } = await supabase
-      .rpc('validate_api_key_hash', { 
-        _api_key: apiKey, 
-        _api_key_hash: keyData.api_key_hash 
+      .rpc('validate_api_key_hash', {
+        _api_key: apiKey,
+        _api_key_hash: keyData.api_key_hash
       });
 
     if (validateError || !isValid) {
@@ -62,7 +62,7 @@ serve(async (req) => {
         error_message: 'Invalid API key hash',
         metadata: { attempted_prefix: keyPrefix }
       });
-      
+
       return new Response(
         JSON.stringify({ error: 'Invalid API key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -78,7 +78,7 @@ serve(async (req) => {
         success: false,
         error_message: 'API key has expired',
       });
-      
+
       return new Response(
         JSON.stringify({ error: 'API key has expired' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -93,7 +93,7 @@ serve(async (req) => {
         success: false,
         error_message: 'API key is inactive',
       });
-      
+
       return new Response(
         JSON.stringify({ error: 'API key is inactive' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -112,19 +112,19 @@ serve(async (req) => {
     // Update usage stats
     await supabase
       .from('api_keys')
-      .update({ 
+      .update({
         requests_count: keyData.requests_count + 1,
         last_used_at: new Date().toISOString()
       })
       .eq('id', keyData.id);
 
     // Parse request body
-    const { 
-      prompt, 
+    const {
+      prompt,
       toolType = 'text',
       model,
       temperature,
-      maxTokens 
+      maxTokens
     } = await req.json();
 
     if (!prompt) {
@@ -136,8 +136,8 @@ serve(async (req) => {
 
     // Call AI optimization
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    const systemPrompt = `You are an expert prompt engineer. Given a user's prompt and the intended tool type (${toolType}), optimize and enhance it to get the best results. Make it clear, specific, and effective.`;
+
+    const systemPrompt = `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are an expert prompt engineer. Given a user's prompt and the intended tool type (${toolType}), optimize and enhance it to get the best results. Make it clear, specific, and effective.`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -161,11 +161,11 @@ serve(async (req) => {
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI gateway error:', aiResponse.status, errorText);
-      
+
       // Handle specific error cases
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Rate limit exceeded. Please try again shortly.',
             code: 'RATE_LIMIT',
             retry_after: 60
@@ -173,19 +173,19 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Insufficient credits. Please top up your Lovable AI workspace.',
             code: 'INSUFFICIENT_CREDITS'
           }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Failed to optimize prompt. Please try again.',
           status: aiResponse.status,
           details: errorText
@@ -209,9 +209,9 @@ serve(async (req) => {
           rate_limit: keyData.rate_limit_per_hour
         }
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
 

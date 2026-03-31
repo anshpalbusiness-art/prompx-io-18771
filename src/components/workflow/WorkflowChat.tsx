@@ -8,6 +8,7 @@ interface WorkflowChatProps {
     isPlanning: boolean;
     error: string | null;
     hasActiveWorkflow: boolean;
+    initialPrompt?: string;
 }
 
 export const WorkflowChat: React.FC<WorkflowChatProps> = ({
@@ -15,10 +16,12 @@ export const WorkflowChat: React.FC<WorkflowChatProps> = ({
     isPlanning,
     error,
     hasActiveWorkflow,
+    initialPrompt,
 }) => {
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<Array<{ role: 'user' | 'system'; content: string }>>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -29,6 +32,13 @@ export const WorkflowChat: React.FC<WorkflowChatProps> = ({
     useEffect(() => {
         if (transcript) setInput(transcript);
     }, [transcript]);
+
+    // Handle initial prompt from navigation
+    useEffect(() => {
+        if (initialPrompt && !input) {
+            setInput(initialPrompt);
+        }
+    }, [initialPrompt]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,6 +77,30 @@ export const WorkflowChat: React.FC<WorkflowChatProps> = ({
         reader.readAsDataURL(file);
     };
 
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = () => setImagePreview(reader.result as string);
+                reader.readAsDataURL(file);
+            }
+        }
+    };
+
     const suggestions = [
         "Help me manage my e-commerce business",
         "Handle my emails efficiently",
@@ -77,7 +111,12 @@ export const WorkflowChat: React.FC<WorkflowChatProps> = ({
     ];
 
     return (
-        <div className="border-t border-zinc-800/50 bg-zinc-950/90 backdrop-blur-xl">
+        <div
+            className={`border-t border-zinc-800/50 bg-zinc-950/90 backdrop-blur-xl transition-colors ${isDragging ? 'ring-2 ring-violet-500 ring-inset bg-violet-500/5' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
             {/* Messages */}
             <AnimatePresence>
                 {messages.length > 0 && (
@@ -166,8 +205,8 @@ export const WorkflowChat: React.FC<WorkflowChatProps> = ({
                         onClick={isListening ? stopListening : startListening}
                         disabled={isPlanning}
                         className={`flex-shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center transition-all disabled:opacity-50 ${isListening
-                                ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
-                                : 'bg-zinc-900/60 border-zinc-800/50 text-zinc-500 hover:text-violet-400 hover:border-violet-500/30'
+                            ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
+                            : 'bg-zinc-900/60 border-zinc-800/50 text-zinc-500 hover:text-violet-400 hover:border-violet-500/30'
                             }`}
                         title={isListening ? 'Stop recording' : 'Voice input'}
                     >

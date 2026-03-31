@@ -63,7 +63,7 @@ function getSummaryCacheKey(messages: ChatMessage[]): string {
 export async function prepareContextWindow(
     systemPrompt: ChatMessage,
     allMessages: ChatMessage[],
-    modelId: string = 'grok-3'
+    modelId: string = 'grok-4-0709'
 ): Promise<ContextWindowResult> {
     const contextLimit = getModelContextLimit(modelId);
     const maxTokens = Math.floor(contextLimit * MAX_CONTEXT_RATIO);
@@ -271,7 +271,7 @@ function trimMessagesToFit(
 export function getContextStats(
     systemPrompt: ChatMessage,
     messages: ChatMessage[],
-    modelId: string = 'grok-3'
+    modelId: string = 'grok-4-0709'
 ) {
     const contextLimit = getModelContextLimit(modelId);
     const systemTokens = estimateTokens(systemPrompt.content) + 4;

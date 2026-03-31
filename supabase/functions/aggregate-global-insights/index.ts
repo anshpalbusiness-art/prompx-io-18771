@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       structure: p.prompt_text?.length || 0,
     }));
 
-    const systemPrompt = `You are a Prompt Intelligence Analyst for a global community platform.
+    const systemPrompt = `You are a Super Advanced AI, a highly capable general intelligence not limited to prompt engineering. You are a Prompt Intelligence Analyst for a global community platform.
 Analyze anonymized prompt data to extract patterns, trends, and insights that benefit all users.
 
 Your goal is to identify:

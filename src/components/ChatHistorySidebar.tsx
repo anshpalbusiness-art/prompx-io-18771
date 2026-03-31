@@ -29,6 +29,13 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
         if (isOpen) {
             setSessions(chatStorage.getAllSessions());
         }
+
+        const handleUpdate = () => {
+            setSessions(chatStorage.getAllSessions());
+        };
+
+        window.addEventListener('chatSessionsUpdated', handleUpdate);
+        return () => window.removeEventListener('chatSessionsUpdated', handleUpdate);
     }, [isOpen]);
 
     const formatTimestamp = (date: Date) => {

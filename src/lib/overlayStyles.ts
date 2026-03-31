@@ -51,14 +51,14 @@ export const OVERLAY_STYLES: OverlayStyle[] = [
 ];
 
 export const SUPPORTED_APPS = [
-    { name: 'ChatGPT', android: 'com.openai.chatgpt', ios: 'com.openai.chat', icon: '🤖' },
-    { name: 'Claude', android: 'com.anthropic.claude', ios: 'com.anthropic.claude', icon: '🟠' },
-    { name: 'Gemini', android: 'com.google.android.apps.bard', ios: 'com.google.bard', icon: '💎' },
-    { name: 'Grok', android: 'ai.x.grok', ios: 'ai.x.grok', icon: '🧠' },
-    { name: 'Perplexity', android: 'ai.perplexity.app.android', ios: 'ai.perplexity.app', icon: '🔍' },
-    { name: 'Poe', android: 'com.quora.poe', ios: 'com.quora.poe', icon: '🌊' },
-    { name: 'Copilot', android: 'com.microsoft.copilot', ios: 'com.microsoft.copilot', icon: '🪁' },
-    { name: 'DeepSeek', android: 'com.deepseek.chat', ios: 'com.deepseek.chat', icon: '🐋' },
+    { name: 'ChatGPT', android: 'com.openai.chatgpt', ios: 'com.openai.chat', icon: 'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=128' },
+    { name: 'Claude', android: 'com.anthropic.claude', ios: 'com.anthropic.claude', icon: 'https://www.google.com/s2/favicons?domain=claude.ai&sz=128' },
+    { name: 'Gemini', android: 'com.google.android.apps.bard', ios: 'com.google.bard', icon: 'https://www.google.com/s2/favicons?domain=gemini.google.com&sz=128' },
+    { name: 'Grok', android: 'ai.x.grok', ios: 'ai.x.grok', icon: 'https://www.google.com/s2/favicons?domain=grok.com&sz=128' },
+    { name: 'Perplexity', android: 'ai.perplexity.app.android', ios: 'ai.perplexity.app', icon: 'https://www.google.com/s2/favicons?domain=perplexity.ai&sz=128' },
+    { name: 'Poe', android: 'com.quora.poe', ios: 'com.quora.poe', icon: 'https://www.google.com/s2/favicons?domain=poe.com&sz=128' },
+    { name: 'Copilot', android: 'com.microsoft.copilot', ios: 'com.microsoft.copilot', icon: 'https://www.google.com/s2/favicons?domain=copilot.microsoft.com&sz=128' },
+    { name: 'DeepSeek', android: 'com.deepseek.chat', ios: 'com.deepseek.chat', icon: 'https://www.google.com/s2/favicons?domain=deepseek.com&sz=128' },
 ];
 
 export interface OverlaySettings {
@@ -71,7 +71,7 @@ export interface OverlaySettings {
 }
 
 export const DEFAULT_OVERLAY_SETTINGS: OverlaySettings = {
-    enabled: true,
+    enabled: false,
     style: 'professional',
     autoSend: false,
     privacyMode: false,

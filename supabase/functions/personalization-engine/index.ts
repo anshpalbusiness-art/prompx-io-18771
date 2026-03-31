@@ -27,7 +27,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey);
     const { userId, action, context, behaviorData }: PersonalizationRequest = await req.json();
 
@@ -188,7 +188,7 @@ serve(async (req) => {
         if (similarBehavior && similarBehavior.length >= 3) {
           // Detected a pattern - create or update learned pattern
           const patternName = `${behaviorData.type}_success_pattern`;
-          
+
           const { data: existingPattern } = await supabase
             .from('learned_patterns')
             .select('*')
